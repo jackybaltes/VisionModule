@@ -116,7 +116,23 @@ main( int argc, char ** argv )
       VideoStream * video = new VideoStream( driver, device_name, input, standard, fps, width, height, depth, numBuffers );
 
       // TODO Auto-generated constructor stub
-      VideoStream::global.buf = ( uint8_t *)malloc( width * height * depth );
+      VideoStream::global.buf = ( uint8_t *)malloc( width * height * depth/8 );
+
+#if defined(DEBUG)
+      unsigned int bpp = depth/8;
+      unsigned int bpl = width * bpp;
+      uint8_t * p;
+      for( unsigned int i = 0; i < height; i++ )
+	{
+	  p = static_cast<uint8_t *>(VideoStream::global.buf + i * bpl);
+	  for ( unsigned int j = 0; j < width; j++ )
+	    {
+	      *p++ = i & 0xff;
+	      *p++ = j & 0xff;
+	      *p++ = 0x80;
+	    }
+	}
+#endif
       VideoStream::global.size = width * height * depth;
   
       if(pthread_mutex_init(& VideoStream::global.db, NULL) != 0)

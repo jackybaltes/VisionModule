@@ -118,7 +118,7 @@ VideoStream::run( )
     {
       device->releaseCurrentBuffer();
       device->nextFrame( & cameraFrame );
-      usleep(10000);
+      sendImage( cameraFrame );
     }
 
   device->stopCapture();
@@ -164,25 +164,25 @@ VideoStream::sendImage(FrameBuffer * img)
 {
   if(HTTPD::ClientRequest == true)
     {
-      std::cout << "sendImage not implemented yet" << endl;
-    }
-  return 0;
-}
-
-#if 0
-      if(img->type() == FrameBuffer::RGB24)
+      std::cout << "Framebuffer type " << img->type() << std::endl;
+      if(img->type() == FrameBuffer::RGB24BE)
 	{
-	  memcpy(input_rgb->buffer, img->buffer, img->width * img->height * img->frameSize);
-      
-      pthread_mutex_lock(&global.db);
-      
-      if(img->bytesPerPixel == 3)
-	{
-	  global.size = jpeg_utils::compress_rgb_to_jpeg(input_rgb, global.buf, input_rgb->frameSize, 80);
+	  //	  memcpy(img->buffer, img->buffer, img->frameSize);
+	  
+	  pthread_mutex_lock(&global.db);
+	  
+	  if(img->bytesPerPixel == 3)
+	    {
+	      global.size = jpeg_utils::compress_fb_to_jpeg(img, global.buf, img->frameSize, 80);
+	    }
+	  else
+	    {
+	      std::cerr << "Unable to handle this pixel size" << std::endl;
+	    }
 	}
       else
 	{
-	  std::cerr << "Unable to handle this pixel size" << std::endl;
+	  std::cerr << "Unable to deal with this image type" << std::endl;
 	}
       pthread_cond_broadcast(&global.db_update);
       pthread_mutex_unlock(&global.db);
@@ -194,7 +194,8 @@ VideoStream::sendImage(FrameBuffer * img)
       pthread_cond_broadcast(&global.db_update);
       pthread_mutex_unlock(&global.db);
     }
-#endif
+  return 0;
+}
   
 void * 
 VideoStream::server_thread(void * arg)

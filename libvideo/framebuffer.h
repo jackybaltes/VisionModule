@@ -109,7 +109,7 @@ class FrameBuffer
 
  public:
 
-  unsigned char *buffer;
+  uint8_t * buffer;
   unsigned int width;
   unsigned int height;
   unsigned int bytesPerPixel;

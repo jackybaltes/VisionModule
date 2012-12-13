@@ -3,9 +3,9 @@ body {
   margin: 15px;
   background-color: #f8f8f8;
   font-family: 'Open Sans',sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: normal;
-  line-height: 1.2em;
+  line-height: 1em;
 }
 p {
   color: #333333;
@@ -22,11 +22,17 @@ p {
   text-align: center;
   margin-top: 140px;
 }
-#tcheader {
+.tcheader {
   background-color: #ff6666;
   width: 60px;
+  font-size: 10px;
 }
-#tcentry {
-  width: 60px;
+.tcentry {
   background-color: #ff6666;
+  width: 80px;
+  font-size: 10px;
+  text-align: right;
+}
+.control {
+  font-size: 10px;
 }

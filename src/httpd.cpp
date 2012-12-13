@@ -226,7 +226,9 @@ Description.: Send a complete HTTP response and a single JPG-frame.
 Input Value.: fildescriptor fd to send the answer to
 Return Value: -
 ******************************************************************************/
-void HTTPD::send_snapshot(int fd) {
+void 
+HTTPD::send_snapshot(int fd) 
+{
   unsigned char *frame=NULL;
   int frame_size=0;
   char buffer[BUFFER_SIZE] = {0};
@@ -238,8 +240,7 @@ void HTTPD::send_snapshot(int fd) {
   frame_size = pglobal->size;
 
   /* allocate a buffer for this single frame */
-  if ( (frame = (unsigned char*)malloc(frame_size+1)) == NULL ) {
-    free(frame);
+  if ( (frame = (uint8_t *)malloc(frame_size+1)) == NULL ) {
     pthread_mutex_unlock( &pglobal->db );
     send_error(fd, 500, "not enough memory");
     return;

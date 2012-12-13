@@ -44,3 +44,11 @@ TARGET_LINK_LIBRARIES(vision_module
    -ljpeg
 )
 
+ADD_CUSTOM_COMMAND(
+  TARGET  vision_module
+  POST_BUILD
+  COMMAND rm -fr ${CMAKE_BINARY_DIR}/www
+  COMMENT Removing www directory
+  COMMAND cp -aR ${CMAKE_SOURCE_DIR}/www ${CMAKE_BINARY_DIR}/www
+  COMMENT Copying www directories
+)

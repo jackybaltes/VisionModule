@@ -1142,7 +1142,7 @@ V4L2Device::nextFrame ( FrameBuffer * * curFramePtr )
   (*curFramePtr)->absFrameNo = tempbuf.sequence;
   (*curFramePtr)->setTimestamp();
 
-#ifdef DEBUG
+#if defined(XX_DEBUG)
   printf
 	("FrameBuffer Information: data=%p %dx%d, bpp = %d, bpl=%d, fieldNo=%d absFrameNo=%d, interlaced=%d\n",
 	 (*curFramePtr)->buffer, (*curFramePtr)->width, (*curFramePtr)->height,

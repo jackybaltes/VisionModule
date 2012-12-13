@@ -1,138 +1,285 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
-<head>
+  <head>
 
-  <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
-  <title>Vision Module Controller</title>
+    <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+    <title>Vision Module Controller</title>
 
 
-  <link type="text/css" href="visionmodulecontroller.css" rel="stylesheet" media="all" title="Vision Module Controller">
+    <link type="text/css" href="visionmodulecontroller.css" rel="stylesheet" media="all" title="Vision Module Controller">
 
-  <link href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css" rel="stylesheet">
+    <link href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css" rel="stylesheet">
 
-  <script src="http://code.jquery.com/jquery-1.8.3.js"></script>
-  <script src="http://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
-</head>
-<body>
+    <script language="javascript" type="text/javascript" src="/visionmodulecontroller.js"></script>
 
-<h1>Vision Module Controller</h1>
+    <script src="http://code.jquery.com/jquery-1.8.3.js"></script>
+    <script src="http://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
+  </head>
 
-<p>Vision viewer for Taibotics vision module.</p>
+  <body>
 
-<button value="Load Configuration" name="loadconfiguration" type="button">Load Configuration</button>
-<button value="Save Configuration" name="saveconfiguration" type="button">Save Configuration</button>
-<div id="container">
-<p id="video"></p>
+    <h1>Vision Module Controller</h1>
 
-</div>
+    <p>Vision viewer for Taibotics vision module.</p>
 
-<div id="accordion">
-<h3> Colour Definition </h3>
 
-<div id="colourdefinition">
-<p> Create and modify colour definitions.</p>
+    <table style="width: 100%; text-align: left; margin-left: auto; margin-right: auto;" border="1" cellpadding="2" cellspacing="2">
 
-<input onchange="changeColour()" value="Red" name="colourname" id="changeColourInput" list="colours"><button onclick="addColour()" value="Add Colour" name="addcolour" type="button">Add Colour
-</button><button onclick="delColour()" value="Delete Colour" name="delcolour" type="button">Delete
-Colour
-</button><br>
+      <tbody>
 
-<button onclick="resetColour()" id="resetColourButton" value="Reset Colour" name="resetcolour" type="button">Reset
-Colour
-</button>
-<table style="text-align: center;" border="1" cellpadding="2" cellspacing="2">
+	<tr>
 
-  <tbody>
+	  <td>
+	    <div id="video">
+	      <noscript><img src="/?action=snapshot" /></noscript>
+	      <body onload="createImageLayer();extendmenu('1', this);">
+	    </div>
 
-    <tr>
+	  </td>
 
-      <th id="tcheader">Red
-Min</th>
+	  <td style="vertical-align: top;">
+	    <button value="Load Configuration" name="loadconfiguration" type="button">Load
+	      Configuration</button><br>
 
-      <th id="tcheader">Green
-Min</th>
+	    <button value="Save Configuration" name="saveconfiguration" type="button">Save
+	      Configuration</button><br>
 
-      <th id="tcheader">Blue
-Min</th>
+	    <p></p>
 
-      <th id="tcheader">RG Min</th>
+	    <button onclick="resetColour()" id="resetColourButton" value="Reset Colour" name="resetcolour" type="button">Reset
+	      Colour
+	    </button>
+	    <p></p>
 
-      <th id="tcheader">RB Min</th>
+	    <button id="pauseplayButtonButton" value="Pause" name="pauseplay" type="button">Pause
+	    </button>
+	  </td>
 
-      <th id="tcheader">GB Min</th>
+	</tr>
 
-    </tr>
+      </tbody>
+    </table>
 
-    <tr>
+    <div id="tabs">
+      <ul>
 
-      <td id="tcentry"><input name="redmin" id="redminButton" min="0" max="255" step="1" value="255">
-      </td>
+	<li><a href="#colourdefinition">Colour Definition</a></li>
 
-      <td id="tcentry"><input name="greenmin" id="greenminButton" min="0" max="255" step="1" value="255"></td>
+	<li><a href="#cameraparameters">Camera Parameters</a></li>
 
-      <td id="tcentry"><input name="bluemin" id="blueminButton" min="0" max="255" step="1" value="255"></td>
+	<li><a href="#serialportconfiguration">Serial Port
+	    Configuration</a></li>
 
-      <td id="tcentry"><input name="redgreenmin" id="redgreenminButton" min="-255" max="255" step="1" value="255"></td>
+      </ul>
 
-      <td id="tcentry"><input name="redbluemin" id="redblueminButton" min="-255" max="255" step="1" value="255"></td>
+      <div id="colourdefinition">
+	<p> Create and modify colour definitions.</p>
 
-      <td id="tcentry"><input name="greenbluemin" id="greenblueminButton" min="-255" max="255" step="1" value="255"></td>
+	<input onchange="changeColour()" value="Red" name="colourname" id="changeColourInput" list="colours"><button onclick="addColour()" value="Add Colour" name="addcolour" type="button">Add Colour
+	</button><button onclick="delColour()" value="Delete Colour" name="delcolour" type="button">Delete
+	  Colour
+	</button><br>
 
-    </tr>
+	<table style="text-align: center; width: 600px;" display="none" border="1" cellpadding="1" cellspacing="1">
 
-    <tr>
+	  <caption>Colour Definition</caption>
+	  <tbody>
 
-      <th id="tcheader">Red
-Max</th>
+	    <tr>
 
-      <th id="tcheader">Green
-Max</th>
+	      <th style="width: 80px;" class="tcheader">Red
+		Min</th>
 
-      <th id="tcheader">Blue
-Max</th>
+	      <th style="width: 80px;" class="tcheader">Green
+		Min</th>
 
-      <th id="tcheader">RG Max</th>
+	      <th style="width: 80px;" class="tcheader">Blue
+		Min</th>
 
-      <th id="tcheader">RB Max</th>
+	      <th style="width: 80px;" class="tcheader">RG
+		Min</th>
 
-      <th id="tcheader">GB Max</th>
+	      <th style="width: 80px;" class="tcheader">RB
+		Min</th>
 
-    </tr>
+	      <th style="width: 80px;" class="tcheader">GB
+		Min</th>
 
-    <tr>
+	    </tr>
 
-      <td id="tcentry"><input name="redmax" id="redmaxButton" min="0" max="255" step="1" value="0"></td>
+	    <tr>
 
-      <td id="tcentry"><input name="greenmax" id="greenmaxButton" min="0" max="255" step="1" value="0"></td>
+	      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redmin" id="redminButton" min="0" max="255" step="1" value="255"></td>
 
-      <td id="tcentry"><input name="bluemax" id="bluemaxButton" min="0" max="255" step="1" value="0"></td>
+	      <td style="width: 80px;" class="tcentry"><input text-align="right" maxlength="4" size="4" name="greenmin" id="greenminButton" min="0" max="255" step="1" value="255"></td>
 
-      <td id="tcentry"><input name="redgreenmax" id="redgreenmaxButton" min="-255" max="255" step="1" value="-255"></td>
+	      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="bluemin" id="blueminButton" min="0" max="255" step="1" value="255"></td>
 
-      <td id="tcentry"><input name="redbluemax" id="redbluemaxButton" min="-255" max="255" step="1" value="-255"></td>
+	      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redgreenmin" id="redgreenminButton" min="-255" max="255" step="1" value="255"></td>
 
-      <td id="tcentry"><input name="greenbluemax" id="greenbluemaxButton" min="-255" max="255" step="1" value="-255"></td>
+	      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redbluemin" id="redblueminButton" min="-255" max="255" step="1" value="255"></td>
 
-    </tr>
+	      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="greenbluemin" id="greenblueminButton" min="-255" max="255" step="1" value="255"></td>
 
-  </tbody>
-</table>
+	    </tr>
 
-</div>
+	    <tr>
 
-<h3> Camera Parameters </h3>
+	      <th style="width: 80px;" class="tcheader">Red
+		Max</th>
 
-<div id="cameraparameters">
-<p> Settings for the brightness, contrast, etc.</p>
+	      <th style="width: 80px;" class="tcheader">Green
+		Max</th>
 
-</div>
+	      <th style="width: 80px;" class="tcheader">Blue
+		Max</th>
 
-</div>
+	      <th style="width: 80px;" class="tcheader">RG
+		Max</th>
 
-<script>
-$(function() {
-$( "#accordion" ).accordion();
-});
-</script>
-</body>
+	      <th style="width: 80px;" class="tcheader">RB
+		Max</th>
+
+	      <th style="width: 80px;" class="tcheader">GB
+		Max</th>
+
+	    </tr>
+
+	    <tr>
+
+	      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redmax" id="redmaxButton" min="0" max="255" step="1" value="0"></td>
+
+	      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="greenmax" id="greenmaxButton" min="0" max="255" step="1" value="0"></td>
+
+	      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="bluemax" id="bluemaxButton" min="0" max="255" step="1" value="0"></td>
+
+	      <td style="width: 80px;" class="tcentry"><input maxlength="3" size="3" name="redgreenmax" id="redgreenmaxButton" min="-255" max="255" step="1" value="-255"></td>
+
+	      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redbluemax" id="redbluemaxButton" min="-255" max="255" step="1" value="-255"></td>
+
+	      <td style="width: 80px;" class="tcentry"></td>
+
+	    </tr>
+
+	  </tbody>
+	</table>
+
+      </div>
+
+      <div id="cameraparameters">
+	<p> Settings for the brightness, contrast, sharpness, etc.</p>
+
+	<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+
+	  <tbody>
+
+	    <tr>
+
+	      <td class="control">Brightness
+		<input maxlength="4" size="4" value="128" name="brightness" min="0" max="255" id="brightnessButton" class="control"></td>
+
+	      <td class="control">Contrast
+		<input maxlength="4" size="4" value="32" name="contrast" min="0" max="255" id="contrastButton" class="control"></td>
+
+	      <td class="control">Saturation
+		<input maxlength="4" size="4" value="38" name="saturation" min="0" max="255" id="saturationButton" class="control"></td>
+
+	      <td class="control">Sharpness
+		<input maxlength="4" size="4" value="128" name="sharpness" min="0" max="255" id="sharpnessButton" class="control"></td>
+
+	    </tr>
+
+	    <tr>
+
+	      <td class="control">Gain
+		<input maxlength="4" size="4" value="128" name="gain" min="0" max="255" id="gainButton" class="control"></td>
+
+	      <td class="control">Power Line Frequency</td>
+
+	      <td class="control">White Balance Temp. Auto <input name="whiteBalanceTemperatureAuto" checked="checked" id="whiteBalanceTemperatureAutoButton" class="control" type="checkbox"></td>
+
+	      <td><br>
+
+	      </td>
+
+	    </tr>
+
+	    <tr>
+
+	      <td class="control">Backlight Comp.
+		<input name="backlightCompensation" id="backlightCompensationButton" class="control" type="checkbox"></td>
+
+	      <td class="control">Exposure Auto Priority
+		<input name="exposureAutoPriority" id="exposureAutoPriorityButton" class="control" type="checkbox"></td>
+
+	      <td></td>
+
+	      <td></td>
+
+	    </tr>
+
+	    <tr>
+
+	      <td class="control">LED1 Mode
+		<input maxlength="4" size="4" value="3" name="led1Mode" min="0" max="255" id="led1ModeButton" class="control"></td>
+
+	      <td class="control">LED1 Frequency
+		<input maxlength="4" size="4" value="0" name="led1Frequency" min="0" max="255" id="led1FrequencyButton" class="control"></td>
+
+	      <td class="control">Disable Video Processing
+		<input name="disableVideoProcessing" checked="checked" id="disableVideoProcessingButton" class="control" type="checkbox"></td>
+
+	      <td class="control">Raw Bits Per Pixel</td>
+
+	    </tr>
+
+	  </tbody>
+	</table>
+
+	<p></p>
+
+      </div>
+
+      <div id="serialportconfiguration">
+	<p> Serial port parameters such as device name, port name, format.</p>
+
+	<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+
+	  <tbody>
+
+	    <tr>
+
+	      <td><span class="control">Device Name</span><input class="control" name="serialPortName" value="/dev/ttyUSB0"></td>
+
+	      <td class="control">Baudrate<input class="control" name="baudrate" value="115200"></td>
+
+	      <td class="control"></td>
+
+	    </tr>
+
+	    <tr>
+
+	      <td class="control">Data Bits/Parity/Stop Bits<input class="control" name="serialFormat" value="8N1"></td>
+
+	      <td class="control">Format</td>
+
+	      <td class="control">FPS<input class="control" name="serialFPS" value="10"></td>
+
+	    </tr>
+
+	  </tbody>
+	</table>
+
+	<p></p>
+
+      </div>
+
+      <script>
+	$(function() {
+	$( "#tabs" ).tabs();
+	});
+      </script>
+    </div>
+
+  </body>
 </html>
