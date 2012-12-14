@@ -94,26 +94,26 @@ function AJAX_get(url) {
   xmlHttp.send(null);
 }
 
-var pretab = "";
-var pretd = "";
-function extendmenu(mid, aobject) {
-    var tab_name = "sc"+mid;
-    var td_name = "td"+mid;
+// var pretab = "";
+// var pretd = "";
+// function extendmenu(mid, aobject) {
+//     var tab_name = "sc"+mid;
+//     var td_name = "td"+mid;
     
-    if(pretab != "") {
-        document.getElementById(pretab).style.display = "none"
-	document.getElementById(pretd).style.backgroundColor="#FFFFFF";
-	document.getElementById(pretd).style.fontWeight="normal";
-	document.getElementById(pretd).style.color="#000000";
-    }
+//     if(pretab != "") {
+//         document.getElementById(pretab).style.display = "none"
+// 	document.getElementById(pretd).style.backgroundColor="#FFFFFF";
+// 	document.getElementById(pretd).style.fontWeight="normal";
+// 	document.getElementById(pretd).style.color="#000000";
+//     }
     
-    document.getElementById(tab_name).style.display = "block"
-    document.getElementById(td_name).style.backgroundColor="navy";
-    document.getElementById(td_name).style.fontWeight="bold";
-    document.getElementById(td_name).style.color="#FFFFFF";
-    pretab = tab_name;
-    pretd = td_name;
-}
+//     document.getElementById(tab_name).style.display = "block"
+//     document.getElementById(td_name).style.backgroundColor="navy";
+//     document.getElementById(td_name).style.fontWeight="bold";
+//     document.getElementById(td_name).style.color="#FFFFFF";
+//     pretab = tab_name;
+//     pretd = td_name;
+// }
 
 function send_command(cmd) {
     document.getElementById('hints').firstChild.nodeValue = "Send command: " + cmd;
@@ -157,7 +157,7 @@ document.onkeydown = KeyDown;
    COPYING for details. */
 
 var imageNr = 0; // Serial number of current image
-var finished = new Array(); // References to img objects which have finished downloading
+//var finished = new Array(); // References to img objects which have finished downloading
 var paused = false;
 
 function createImageLayer() {
@@ -170,17 +170,19 @@ function createImageLayer() {
     var video = document.getElementById("video");
     var ctx=document.getElementById("videocanvas").getContext("2d");    
     ctx.drawImage(img, 0,0);
-    video.insertBefore(img, video.firstChild);
+//    video.insertBefore(img, video.firstChild);
 }
 
 // Two layers are always present (except at the very beginning), to avoid flicker
 function imageOnload() {
-  this.style.zIndex = imageNr; // Image finished, bring to front!
-  while (1 < finished.length) {
-    var del = finished.shift(); // Delete old image(s) from document
-    del.parentNode.removeChild(del);
-  }
-  finished.push(this);
+//  this.style.zIndex = imageNr; // Image finished, bring to front!
+//  while (1 < finished.length) {
+//    var del = finished.shift(); // Delete old image(s) from document
+//    del.parentNode.removeChild(del);
+//  }
+//  finished.push(this);
+  var ctx=document.getElementById("videocanvas").getContext("2d");    
+  ctx.drawImage(this, 0,0);
   if (!paused) createImageLayer();
 }
 
