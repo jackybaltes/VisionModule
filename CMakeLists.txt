@@ -23,7 +23,7 @@ ADD_EXECUTABLE( vision_module
   src/main.cpp
   src/videostream.cpp
   src/httpd.cpp
-  streamer/jpeg_utils.cpp
+  src/jpeg_utils.cpp
 )
 
 ADD_DEFINITIONS(

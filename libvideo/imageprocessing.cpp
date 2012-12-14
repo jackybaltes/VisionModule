@@ -218,7 +218,7 @@ ImageProcessing::segmentScanLines( FrameBuffer const * frame,
 		  else if (target->isMatch( colour ) ) 
 		    {
 		      state.initialize();
-		      doFloodFill( frame, outFrame, Point( startLine, row), colour, threshold, target, subSample, & state );
+		      doFloodFill( frame, outFrame, Point( startLine, row), colour, threshold, target, 1, & state );
 		      
 #ifdef XX_DEBUG
 		      if ( state.size() > minSize )
@@ -255,6 +255,84 @@ ImageProcessing::segmentScanLines( FrameBuffer const * frame,
 	      avgBlue = avgBlue + cPixel.blue;
 	    }
 	  pPixel = cPixel;
+	}
+    }
+}
+
+void
+ImageProcessing::SegmentColours( FrameBuffer const * frame, 
+				 FrameBuffer * outFrame, 
+				 unsigned int threshold, 
+				 unsigned int minLength,
+				 unsigned int minSize,
+				 unsigned int subSample,
+				 ColourDefinition const & target,
+				 RawPixel const & mark
+				 )
+{
+  FrameBufferIterator it( frame );
+  FrameBufferIterator oit( outFrame );
+  Pixel cPixel;
+  RawPixel oPixel;
+  unsigned int len;
+  FloodFillState state;
+  unsigned int count;
+  
+  for( unsigned int row = 0; row < frame->height; row = row + subSample )
+    {
+      it.goPosition(row, subSample);
+      oit.goPosition(row, subSample);
+
+      count = 0;
+      for( unsigned int col = subSample; col < frame->width; col = col + subSample, it.goRight( subSample ),oit.goRight( subSample ) )
+	{
+	  oit.getPixel( & oPixel );
+	  if ( oPixel == RawPixel( 0, 0, 0 ) )
+	    {
+	      it.getPixel( & cPixel );
+	      
+	      if ( target.isMatch( cPixel ) )
+		{
+		  count++;
+		}
+	      else
+		{
+		  count = 0;
+		}
+	      
+	      if ( count >= minLength )
+		{
+		  state.initialize();
+		  doFloodFill( frame, outFrame, Point( col, row), 
+			       cPixel, threshold, & target, 
+			       subSample, & state );
+		  
+#ifdef XX_DEBUG
+		  if ( state.size() > minSize )
+		    {
+		      std::cout << "Flood fill returns size " << state.size() << std::endl;
+		    }
+#endif
+		  if ( state.size() > minSize )
+		    {
+		      unsigned int tlx = state.bBox().topLeft().x();
+		      unsigned int tly = state.bBox().topLeft().y();
+		      unsigned int brx = state.bBox().bottomRight().x();
+		      unsigned int bry = state.bBox().bottomRight().y();
+		      
+		      drawBresenhamLine( outFrame, tlx, tly, tlx, bry, mark );
+		      drawBresenhamLine( outFrame, tlx, bry, brx, bry, mark );
+		      drawBresenhamLine( outFrame, brx, bry, brx, tly, mark );
+		      drawBresenhamLine( outFrame, brx, tly, tlx, tly, mark );
+		      //		      swapColours( outFrame, 0, state.bBox(), 1, ColourDefinition( Pixel(colour), Pixel(colour) ), state.averageColour() );
+		    }
+		  count = 0;
+		}
+	    }
+	  else
+	    {
+	      count = 0;
+	    }
 	}
     }
 }

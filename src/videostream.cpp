@@ -1,8 +1,7 @@
 /*
- * mjpg_streamer.cpp
- *
- *  Created on: 2011. 1. 4.
- *      Author: zerom
+ * videostream.cpp
+ * 
+ * Jacky Baltes <jacky@cs.umanitoba.ca> Thu Dec 13 01:09:15 CST 2012
  */
 
 #include <iostream>
@@ -39,6 +38,10 @@ using namespace std;
 
 #include "../libvideo/framebuffer.h"
 #include "../libvideo/framebufferrgb24.h"
+#include "../libvideo/framebufferrgb24be.h"
+#include "../libvideo/colourdefinition.h"
+#include "../libvideo/pixel.h"
+#include "../libvideo/imageprocessing.h"
 
 #define WWW_FOLDER          "./www/"
 
@@ -108,20 +111,107 @@ void
 VideoStream::run( )
 {
   FrameBuffer * cameraFrame = 0;
-  
+  FrameBuffer * outFrame = 0;
+
   device->startCapture( );
   
   device->nextFrame( & cameraFrame );
 
+  if ( cameraFrame != 0 )
+    {
+      outFrame = new FrameBufferRGB24BE( );
+      outFrame->initialize( cameraFrame->width, cameraFrame->height );
+    }
+
+  ColourDefinition colours[] = { ColourDefinition(Pixel(128,160,0,-50,60,128,0,0,0),
+						  Pixel(255,255,128,0,180,180,255,255,255)),
+				 //				 ColourDefinition( Pixel(0,100,0,-255,-255,-255,0,0,0),
+				 //						   Pixel(128,255,128,0,255,0,255,255,255) ),
+				 //				 ColourDefinition( Pixel(0,0,100,-255,-255,-255,0,0,0),
+				 //						   Pixel(255,255,255,255,0,0,255,255,255) ) 
+  };
+  
+  RawPixel marks[] = { RawPixel(255,0,0), RawPixel(0,255,255), RawPixel(0,0,255) };
+
   done = false;
   while( ! done )
     {
-      device->releaseCurrentBuffer();
       device->nextFrame( & cameraFrame );
-      sendImage( cameraFrame );
+      if ( cameraFrame != 0 )
+	{
+	  ProcessFrame( SegmentColours, cameraFrame, outFrame, 1, colours, sizeof(colours)/sizeof(colours[0]), marks );
+	}
+      device->releaseCurrentBuffer();
+      sendImage( outFrame );
     }
 
+  if ( outFrame != 0 )
+    {
+      delete outFrame;
+    }
   device->stopCapture();
+}
+
+void
+VideoStream::ProcessFrame( enum ProcessType ptype, 
+			   FrameBuffer * frame, 
+			   FrameBuffer * outFrame, 
+			   unsigned int subSample, 
+			   ColourDefinition colours[],
+			   unsigned int numColours,
+			   RawPixel marks[]
+			   )
+{
+  outFrame->fill( RawPixel( 0, 0, 0 ) );
+  
+  if ( (  ptype == Raw ) || ( ptype == ShowColours ) )
+    {
+      ImageProcessing::convertBuffer( frame, outFrame, subSample );
+    }
+
+  if ( ptype == ShowColours )
+    {
+      for( unsigned int i = 0; i < numColours; i++ )
+	{
+	  ImageProcessing::swapColours( outFrame, 0,
+					Rect( Point(0,0), Point(outFrame->width, outFrame->height) ), 
+					subSample,
+					colours[i], 
+					marks[i] );
+	}
+    }
+
+  if ( ptype == SegmentColours )
+    {
+      for( unsigned int i = 0; i < numColours; i++ )
+	{
+	  ImageProcessing::SegmentColours( frame, outFrame,
+					   50,5,10,
+					   subSample,
+					   colours[i], 
+					   marks[i] );
+	}
+    }
+
+
+  //  unsigned int threshold = mainWindow->sbThreshold->value();
+  //unsigned int minimumLineLength = mainWindow->sbMinimumLineLength->value();
+  //unsigned int maximumLineLength = mainWindow->sbMaximumLineLength->value();
+  
+  //unsigned int minimumSize = mainWindow->sbMinimumSize->value();
+	      
+  if ( ptype == Scanlines )
+    {
+      //      ImageProcessing::segmentScanLines( frame, outFrame, threshold, minimumLineLength, maximumLineLength, minimumSize, mark, subSample, 0 );
+    }
+  
+  if ( ptype == Segmentation )
+    {
+      //ColourDefinition target;
+      //    getColourDefinition( & target );
+      
+      //ImageProcessing::segmentScanLines( frame, outFrame, threshold, minimumLineLength, maximumLineLength, minimumSize, mark, subSample, & target );
+    }
 }
 
 void

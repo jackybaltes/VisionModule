@@ -161,14 +161,16 @@ var finished = new Array(); // References to img objects which have finished dow
 var paused = false;
 
 function createImageLayer() {
-  var img = new Image();
-  img.style.position = "absolute";
-  img.style.zIndex = -1;
-  img.onload = imageOnload;
-//  img.onclick = imageOnclick;
-  img.src = "/?action=snapshot&n=" + (++imageNr);
-  var video = document.getElementById("video");
-  video.insertBefore(img, video.firstChild);
+    var img = new Image();
+    img.style.position = "absolute";
+    img.style.zIndex = -1;
+    img.onload = imageOnload;
+    //  img.onclick = imageOnclick;
+    img.src = "/?action=snapshot&n=" + (++imageNr);
+    var video = document.getElementById("video");
+    var ctx=document.getElementById("videocanvas").getContext("2d");    
+    ctx.drawImage(img, 0,0);
+    video.insertBefore(img, video.firstChild);
 }
 
 // Two layers are always present (except at the very beginning), to avoid flicker
@@ -181,4 +183,27 @@ function imageOnload() {
   finished.push(this);
   if (!paused) createImageLayer();
 }
+
+// function createImageLayer() {
+//     var img = new Image();
+//     img.style.position = "absolute";
+//     //img.style.zIndex = -1;
+//     img.onload = imageOnload;
+//     //  img.onclick = imageOnclick;
+//     img.src = "/?action=snapshot&n=" + (++imageNr);
+//     var video = document.getElementById("video");
+//     var ctx=video.getContext("2d");    
+//     ctx.drawImage(img, 0,0);
+// }
+
+// // Two layers are always present (except at the very beginning), to avoid flicker
+// function imageOnload() {
+//   this.style.zIndex = imageNr; // Image finished, bring to front!
+//   while (1 < finished.length) {
+//     var del = finished.shift(); // Delete old image(s) from document
+//     //del.parentNode.removeChild(del);
+//   }
+//   finished.push(this);
+//   if (!paused) createImageLayer();
+// }
 
