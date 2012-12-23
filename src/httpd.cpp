@@ -411,7 +411,9 @@ void HTTPD::send_file(int fd, char const * parameter) {
      
   /* in case no parameter was given */
   if ( parameter == NULL || strlen(parameter) == 0 )
-    parameter = "index.html";
+    {
+      parameter = conf.index;
+    }
 
   /* find file-extension */
   if ( (extension = strstr(parameter, ".")) == NULL ) {
@@ -474,20 +476,14 @@ Input Value.: * fd.......: filedescriptor to send HTTP response to.
               * id.......: specifies which server-context to choose.
 Return Value: -
 ******************************************************************************/
-void HTTPD::command(int fd, char const * parameter) {
+void 
+HTTPD::ParseCommand(int fd, char const * parameter) 
+{
+  char command[256];
+  char const * pcommand;
+
   char buffer[BUFFER_SIZE] = {0};
-  char const * ccommand = NULL;
-  char * command = NULL;
-  char const * csvalue = NULL;
-  char * svalue=NULL;
-  char const * csection = NULL;
-  char * section=NULL;
-
-  int i=0, res=0, ivalue=0, len=0;
-  float fvalue = 0.0f;
   char ret_s[10] = {0};
-
-  DBG("parameter is: %s\n", parameter);
 
   /* sanity check of parameter-string */
   if ( parameter == NULL || strlen(parameter) >= 100 || strlen(parameter) == 0 ) {
@@ -496,84 +492,24 @@ void HTTPD::command(int fd, char const * parameter) {
     return;
   }
 
+  DBG("parameter is: %s\n", parameter);
+
   /* search for required variable "command" */
-  if ( (ccommand = strstr(parameter, "command=")) == NULL ) {
+  if ( (pcommand = strstr(parameter, "command=")) == NULL ) {
     DBG("no command specified\n");
     send_error(fd, 400, "no GET variable \"command=...\" found, it is required to specify which command to execute");
     return;
   }
-
-  /* allocate and copy command string */
-  ccommand += strlen("command=");
-  len = strspn(ccommand, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890");
-  if ( (command = strndup(command, len)) == NULL ) {
-    send_error(fd, 500, "could not allocate memory");
-    LOG("could not allocate memory\n");
-    return;
-  }
-  DBG("command string: %s\n", command);
-
-  /* find and convert optional parameter "value" */
-  if ( (csvalue = strstr(parameter, "value=")) != NULL ) {
-    csvalue += strlen("value=");
-    len = strspn(csvalue, "-1234567890.");
-    if ( (svalue = strndup(csvalue, len)) == NULL ) {
-      if (command != NULL) free(command);
-      send_error(fd, 500, "could not allocate memory");
-      LOG("could not allocate memory\n");
-      return;
+  
+  char * out = & command[0];
+  pcommand = pcommand + strlen("command=");
+  while( ( * pcommand != '\0' ) && ( * pcommand != '&' ) && ( out < command + sizeof(command) - 1 ) )
+    {
+      *out++ = *pcommand++;
     }
-    ivalue = MAX(MIN(strtol(svalue, NULL, 10), 999), -999);
-    fvalue = MAX(MIN(strtof(svalue, NULL), 999), -999);
-    DBG("converted value form string %s to integer %d\n", svalue, ivalue);
-    free(svalue);
-  }
+  *out = '\0';
 
-  /* search for required variable "section" */
-  if ( (csection = strstr(parameter, "section=")) == NULL ) {
-    DBG("no section specified\n");
-  }
-  else
-  {
-      /* allocate and copy command string */
-      csection += strlen("section=");
-      len = strspn(csection, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890");
-      if ( (section = strndup(csection, len)) == NULL ) {
-        send_error(fd, 500, "could not allocate memory");
-        LOG("could not allocate memory\n");
-        return;
-      }
-  }
-
-  /*
-   * determine command, try the input command-mappings first
-   * this is the interface to send commands to the input plugin.
-   * if the input-plugin does not implement the optional command
-   * function, a short error is reported to the HTTP-client.
-   */
-  for ( i=0; i < LENGTH_OF(in_cmd_mapping); i++ ) {
-    if ( strcmp(in_cmd_mapping[i].string, ccommand) == 0 ) {
-/*
-      if ( pglobal->in.cmd == NULL ) {
-        send_error(fd, 501, "input plugin does not implement commands");
-        if (command != NULL) free(command);
-        return;
-      }
-*/
-
-      //res = input_cmd(in_cmd_mapping[i].cmd, ivalue);
-      input_cmd(in_cmd_mapping[i].cmd, fvalue, ret_s);
-      break;
-    }
-  }
-
-  /* check if the command is for the output plugin itself */
-  for ( i=0; i < LENGTH_OF(out_cmd_mapping); i++ ) {
-    if ( strcmp(out_cmd_mapping[i].string, ccommand) == 0 ) {
-      //res = output_cmd(id, out_cmd_mapping[i].cmd, ivalue);
-      break;
-    }
-  }
+  DBG("command is: %s\n", command );
 
   /* Send HTTP-response */
   sprintf(buffer, "HTTP/1.0 200 OK\r\n" \
@@ -584,9 +520,10 @@ void HTTPD::command(int fd, char const * parameter) {
 
   write(fd, buffer, strlen(buffer));
 
-  if (ccommand != NULL) free(command);
+  //  if (ccommand != NULL) free(command);
 }
 
+#if 0
 void HTTPD::input_cmd(in_cmd_type cmd, float value, char* res_str)
 {
     int res = -1;
@@ -600,7 +537,7 @@ void HTTPD::input_cmd(in_cmd_type cmd, float value, char* res_str)
 
     //pthread_mutex_unlock(&controls_mutex);
 }
-
+#endif
 
 /******************************************************************************
 Description.: Serve a connected TCP-client. This thread function is called
@@ -750,7 +687,7 @@ void* HTTPD::client_thread( void *arg ) {
         send_error(lcfd.fd, 501, "this server is configured to not accept commands");
         break;
       }
-      command(lcfd.fd, req.parameter);
+      ParseCommand(lcfd.fd, req.parameter);
       break;
     case A_FILE:
       if ( lcfd.pc->conf.docroot == NULL )
@@ -839,14 +776,14 @@ HTTPD::server_thread( void *arg )
 	  std::exit(2);
 	}
     }
-  
-  
-  if ( bind(server->sd, (struct sockaddr*)&addr, sizeof(addr)) != 0 ) {
-    perror("bind");
-    OPRINT("%s(): bind(%d) failed", __FUNCTION__, htons(server->conf.http_port));
-    closelog();
-    exit(EXIT_FAILURE);
-  }
+    
+  if ( bind(server->sd, (struct sockaddr*)&addr, sizeof(addr)) != 0 ) 
+    {
+      perror("bind");
+      OPRINT("%s(): bind(%d) failed", __FUNCTION__, htons(server->conf.http_port));
+      closelog();
+      exit(EXIT_FAILURE);
+    }
 
   /* start listening on socket */
   if ( listen(server->sd, 10) != 0 ) {

@@ -34,7 +34,7 @@ using namespace std;
 #include <linux/videodev2.h>
 
 #include "videostream.h"
-#include "../streamer/jpeg_utils.h"
+#include "jpeg_utils.h"
 
 #include "../libvideo/framebuffer.h"
 #include "../libvideo/framebufferrgb24.h"
@@ -125,10 +125,10 @@ VideoStream::run( )
 
   ColourDefinition colours[] = { ColourDefinition(Pixel(128,160,0,-50,60,128,0,0,0),
 						  Pixel(255,255,128,0,180,180,255,255,255)),
-				 //				 ColourDefinition( Pixel(0,100,0,-255,-255,-255,0,0,0),
-				 //						   Pixel(128,255,128,0,255,0,255,255,255) ),
-				 //				 ColourDefinition( Pixel(0,0,100,-255,-255,-255,0,0,0),
-				 //						   Pixel(255,255,255,255,0,0,255,255,255) ) 
+				 ColourDefinition( Pixel(0,100,0,-255,-255,-255,0,0,0),
+						   Pixel(128,255,128,0,255,0,255,255,255) ),
+				 ColourDefinition( Pixel(0,0,100,-255,-255,-255,0,0,0),
+						   Pixel(255,255,255,255,0,0,255,255,255) ) 
   };
   
   RawPixel marks[] = { RawPixel(255,0,0), RawPixel(0,255,255), RawPixel(0,0,255) };
@@ -230,6 +230,7 @@ VideoStream::~VideoStream()
   // TODO Auto-generated destructor stub
 }
 
+#if 0
 int 
 VideoStream::input_cmd(in_cmd_type cmd, int value)
 {
@@ -248,6 +249,7 @@ VideoStream::input_cmd(in_cmd_type cmd, int value)
   
   return res;
 }
+#endif
 
 int 
 VideoStream::sendImage(FrameBuffer * img)

@@ -115,13 +115,13 @@ function AJAX_get(url) {
 //     pretd = td_name;
 // }
 
-function send_command(cmd) {
+function SendCommand(cmd) {
     document.getElementById('hints').firstChild.nodeValue = "Send command: " + cmd;
     AJAX_get('/?action=command&command='+ cmd)
 }
 
 function AJAX_response(text) {
-    document.getElementById('hints').firstChild.nodeValue = "Got response: " + text;
+//    document.getElementById('hints').firstChild.nodeValue = "Got response: " + text;
 }
 
 function KeyDown(ev) {
@@ -167,9 +167,10 @@ function createImageLayer() {
     img.onload = imageOnload;
     //  img.onclick = imageOnclick;
     img.src = "/?action=snapshot&n=" + (++imageNr);
-    var video = document.getElementById("video");
+  //  var video = document.getElementById("video");
     var ctx=document.getElementById("videocanvas").getContext("2d");    
-    ctx.drawImage(img, 0,0);
+    //ctx.drawImage(img, 0,0);
+    InitCanvas();
 //    video.insertBefore(img, video.firstChild);
 }
 
@@ -181,9 +182,10 @@ function imageOnload() {
 //    del.parentNode.removeChild(del);
 //  }
 //  finished.push(this);
-  var ctx=document.getElementById("videocanvas").getContext("2d");    
-  ctx.drawImage(this, 0,0);
-  if (!paused) createImageLayer();
+    var ctx=document.getElementById("videocanvas").getContext("2d");    
+    //ctx.drawImage(this, 0,0);
+    InitCanvas();
+    if (!paused) createImageLayer();
 }
 
 // function createImageLayer() {
@@ -209,3 +211,36 @@ function imageOnload() {
 //   if (!paused) createImageLayer();
 // }
 
+function OnChangeProcessingMode() {
+    sb = document.getElementById('processingMode');
+    SendCommand("processingmode" + "&" + "value=" + sb.value)
+    
+    return false;
+}
+
+var count = 0;
+function InitCanvas() {
+    var ctx=document.getElementById("videocanvas").getContext("2d");
+    var width=320;
+    var height=240;
+    var imgd = ctx.getImageData(0, 0, width, height);
+    var pix = imgd.data;
+    var bpp = 4;
+    var bpl = width * bpp;
+
+    count++;
+
+// Loop over each pixel and invert the color.
+    for (var i = 0; i < height; i++ ) {
+        for( var j = 0; j < width; j++ ) {
+            pix[i * bpl + j * bpp + 0 ] = i & 0xff; // red
+            pix[i * bpl + j * bpp + 1 ] = j & 0xff; // green
+            pix[i * bpl + j * bpp + 2 ] = count & 0xff; // blue
+	    pix[i * bpl + j * bpp + 3 ] = 255;
+            // i+3 is alpha (the fourth element)
+        }
+    }
+    console.log("Image data %d %d %d %d %d %d", imgd.data[0], imgd.data[1], imgd.data[2], imgd.data[3], imgd.data[4], imgd.data[5]);
+    // Draw the ImageData at the given (x,y) coordinates.
+    ctx.putImageData(imgd, 0, 0);
+}

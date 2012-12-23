@@ -50,7 +50,7 @@ public:
   static void run_trampoline( VideoStream * vs );
   
   int input_init();
-  int input_cmd(in_cmd_type cmd, int value);
+  //int input_cmd(in_cmd_type cmd, int value);
   int sendImage(FrameBuffer * img);
   
   //int output_init();

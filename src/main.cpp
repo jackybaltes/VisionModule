@@ -22,6 +22,7 @@ main( int argc, char ** argv )
   string config_file;
   string device_name;
   string driver;
+  string index;
 
   string input("default");
   string standard("default");
@@ -58,21 +59,23 @@ main( int argc, char ** argv )
 	("depth", po::value<unsigned int>( & depth )->default_value(24),"depth")
 	;
 
-      po::options_description libwtOptions("Http Server Options");
-      libwtOptions.add_options()
+      po::options_description httpOptions("Http Server Options");
+      httpOptions.add_options()
 	("http-port", po::value<unsigned int>( & http_port )->default_value(8080)->required(),"http port number")
 	("http-addr", po::value<string>(& http_addr)->default_value("0.0.0.0")->required(),"http address")
-	("docroot", po::value<string>(& docroot)->default_value("www/")->required(),"http document root");
+	("docroot", po::value<string>(& docroot)->default_value("www/")->required(),"http document root")
+	("index", po::value<string>(& index)->default_value("index.html"),"index.html file name");
+        
 	 
       po::options_description commandLineOptions;
-      commandLineOptions.add(commandLineOnlyOptions).add(generalOptions).add(libwtOptions);
+      commandLineOptions.add(commandLineOnlyOptions).add(generalOptions).add(httpOptions);
 
       po::variables_map vm;
       po::store(po::parse_command_line(argc,argv,commandLineOptions),vm);
       po::notify(vm);
 
       po::options_description configFileOptions;
-      configFileOptions.add(generalOptions).add(libwtOptions);
+      configFileOptions.add(generalOptions).add(httpOptions);
 
       ifstream ifs( config_file.c_str() );
       po::store(po::parse_config_file(ifs, configFileOptions), vm );
@@ -158,8 +161,9 @@ main( int argc, char ** argv )
       video->server.conf.http_addr = http_addr.c_str();
       video->server.conf.credentials = NULL;
       video->server.conf.docroot = docroot.c_str();
+      video->server.conf.index = index.c_str();
       video->server.conf.nocommands = 0;
-      
+
 #if defined(DEBUG)
       cout << "Starting video thread" << endl;
 #endif
