@@ -7,10 +7,13 @@
 #define __VIDEOSTREAM_H__
 
 #include <string>
+#include <vector>
 
 #include <pthread.h>
 
 #include "httpd.h"
+
+#include "../libvideo/colourdefinition.h"
 
 using namespace std;
 
@@ -18,6 +21,7 @@ class FrameBuffer;
 class VideoDevice;
 class ColourDefinition;
 class RawPixel;
+
 
 class VideoStream
 {
@@ -71,16 +75,36 @@ public:
 		     FrameBuffer * frame, 
 		     FrameBuffer * outFrame, 
 		     unsigned int subSample, 
-		     ColourDefinition colours[], 
-		     unsigned int numColours, 
+		     std::vector<ColourDefinition> colours, 
 		     RawPixel marks[] );
+
+  static int CommandProcessingMode( VideoStream * video, char const * command, char * response, unsigned int respLength );
+  static int CommandUpdateColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
+
  private:
   VideoDevice * device;
   struct timeval prev;
   bool done;
+
  public:
   pthread_t threadID;
-};
 
+ public:
+
+  static struct Command const Commands[];
+
+ private:
+  volatile enum ProcessType mode;
+
+ private:
+  void UpdateColour(ColourDefinition const colour );
+
+ public:
+  enum ProcessType GetMode( void ) const;
+  void SetMode( enum ProcessType mode );
+
+ public:
+  std::vector<ColourDefinition> colours;
+};
 
 #endif /* __VIDEOSTREAM_H__ */

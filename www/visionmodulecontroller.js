@@ -157,21 +157,30 @@ document.onkeydown = KeyDown;
    COPYING for details. */
 
 var imageNr = 0; // Serial number of current image
-//var finished = new Array(); // References to img objects which have finished downloading
-var paused = false;
+var paused = false;  
+
+function onclickPausePlayButton(b) {
+    paused = !paused;
+    if ( paused ) {
+	b.value = "Play";
+	b.innerHTML = "Play";
+    } else {
+	b.value = "Pause";
+	b.innerHTML = "Pause";
+    }
+    if (! paused ) createImageLayer();
+}
 
 function createImageLayer() {
     var img = new Image();
     img.style.position = "absolute";
-    img.style.zIndex = -1;
+    img.style.zIndex = 0;
     img.onload = imageOnload;
     //  img.onclick = imageOnclick;
     img.src = "/?action=snapshot&n=" + (++imageNr);
-  //  var video = document.getElementById("video");
     var ctx=document.getElementById("videocanvas").getContext("2d");    
-    //ctx.drawImage(img, 0,0);
-    InitCanvas();
-//    video.insertBefore(img, video.firstChild);
+    ctx.drawImage(img, 0,0);
+//    InitCanvas();
 }
 
 // Two layers are always present (except at the very beginning), to avoid flicker
@@ -183,8 +192,8 @@ function imageOnload() {
 //  }
 //  finished.push(this);
     var ctx=document.getElementById("videocanvas").getContext("2d");    
-    //ctx.drawImage(this, 0,0);
-    InitCanvas();
+    ctx.drawImage(this, 0,0);
+//    InitCanvas();
     if (!paused) createImageLayer();
 }
 
@@ -213,7 +222,7 @@ function imageOnload() {
 
 function OnChangeProcessingMode() {
     sb = document.getElementById('processingMode');
-    SendCommand("processingmode" + "&" + "value=" + sb.value)
+    SendCommand("processingmode" + "&" + "mode=" + sb.value) 
     
     return false;
 }
@@ -240,7 +249,57 @@ function InitCanvas() {
             // i+3 is alpha (the fourth element)
         }
     }
-    console.log("Image data %d %d %d %d %d %d", imgd.data[0], imgd.data[1], imgd.data[2], imgd.data[3], imgd.data[4], imgd.data[5]);
+//    console.log("Image data %d %d %d %d %d %d", imgd.data[0], imgd.data[1], imgd.data[2], imgd.data[3], imgd.data[4], imgd.data[5]);
     // Draw the ImageData at the given (x,y) coordinates.
     ctx.putImageData(imgd, 0, 0);
+}
+
+function onclickResetColour() {
+    document.getElementById("redminButton").value = 255;
+    document.getElementById("greenminButton").value = 255;
+    document.getElementById("blueminButton").value = 255;
+
+    document.getElementById("redmaxButton").value = 0;
+    document.getElementById("greenmaxButton").value = 0;
+    document.getElementById("bluemaxButton").value = 0;
+
+    document.getElementById("redgreenminButton").value = 255;
+    document.getElementById("redblueminButton").value = 255;
+    document.getElementById("greenblueminButton").value = 255;
+
+    document.getElementById("redgreenmaxButton").value = -255;
+    document.getElementById("redbluemaxButton").value = -255;
+    document.getElementById("greenbluemaxButton").value = -255;
+
+    onchangeColourDefinition();
+}
+
+function onchangeColourDefinition( ) {
+    console.log("Sendign new colour definition");
+    SendCommand("updatecolour" + "&" + "{" +
+		document.getElementById("colourName").value + "&" + 
+		document.getElementById("redminButton").value + "&" +
+		document.getElementById("greenminButton").value + "&" + 
+		document.getElementById("blueminButton").value + "&" +
+
+		document.getElementById("redmaxButton").value + "&" + 
+		document.getElementById("greenmaxButton").value + "&" + 
+		document.getElementById("bluemaxButton").value + "&" + 
+
+		document.getElementById("redgreenminButton").value + "&" + 
+		document.getElementById("redblueminButton").value + "&" + 
+		document.getElementById("greenblueminButton").value + "&" + 
+
+		document.getElementById("redgreenmaxButton").value + "&" + 
+		document.getElementById("redbluemaxButton").value + "&" + 
+		document.getElementById("greenbluemaxButton").value + "&" + 
+
+		0 + "&" + 
+		0 + "&" + 
+		0 + "&" + 
+
+		255 + "&" + 
+		255 + "&" + 
+		255 + "}"
+	       );
 }

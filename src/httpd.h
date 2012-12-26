@@ -44,16 +44,96 @@
 #define LENGTH_OF(x) (sizeof(x)/sizeof(x[0]))
 
 #ifdef DEBUG
-#define DBG(...) fprintf(stderr, " DBG(%s, %s(), %d): ", __FILE__, __FUNCTION__, __LINE__); fprintf(stderr, __VA_ARGS__)
+#define DBG(...) fprintf(stdout, " DBG(%s, %s(), %d): ", __FILE__, __FUNCTION__, __LINE__); fprintf(stdout, __VA_ARGS__)
 #else
 #define DBG(...)
 #endif
 
-#define LOG(...) { char _bf[1024] = {0}; snprintf(_bf, sizeof(_bf)-1, __VA_ARGS__); fprintf(stderr, "%s", _bf); syslog(LOG_INFO, "%s", _bf); }
+#define LOG(...) { char _bf[1024] = {0}; snprintf(_bf, sizeof(_bf)-1, __VA_ARGS__); fprintf(stdout, "%s", _bf); syslog(LOG_INFO, "%s", _bf); }
 
 #define OUTPUT_PLUGIN_PREFIX " o: "
-#define OPRINT(...) { char _bf[1024] = {0}; snprintf(_bf, sizeof(_bf)-1, __VA_ARGS__); fprintf(stderr, "%s", OUTPUT_PLUGIN_PREFIX); fprintf(stderr, "%s", _bf); syslog(LOG_INFO, "%s", _bf); }
+#define OPRINT(...) { char _bf[1024] = {0}; snprintf(_bf, sizeof(_bf)-1, __VA_ARGS__); fprintf(stdout, "%s", OUTPUT_PLUGIN_PREFIX); fprintf(stdout, "%s", _bf); syslog(LOG_INFO, "%s", _bf); }
 
+typedef struct _globals globals;
+
+class VideoStream;
+
+struct _globals 
+{
+  /* signal fresh frames */
+  pthread_mutex_t db;
+  pthread_cond_t  db_update;
+  
+    /* global JPG frame, this is more or less the "database" */
+  unsigned char* buf;
+  int size;
+};
+
+enum CommandReturn
+  {
+    COMMAND_ERR_OK = 1,
+    COMMAND_ERR_CONTINUE = 0,
+    COMMAND_ERR_COMMAND = -1,
+    COMMAND_ERR_PARAMETER = -2
+  };
+
+
+
+struct Command 
+{
+  int (* command)( VideoStream * video, char const * parameter, char * response, unsigned int maxResponseLength );
+};
+
+/* store configuration for each server instance */
+typedef struct {
+  unsigned int http_port;
+  char const * http_addr;
+  char * credentials;
+  char const * docroot;
+  char const * index;
+  char nocommands;
+  struct Command const * commands;
+  VideoStream * video;
+} config;
+
+/* context of each server thread */
+typedef struct {
+  int sd;
+  globals *pglobal;
+  pthread_t threadID;
+
+  config conf;
+} context;
+
+
+/* the webserver determines between these values for an answer */
+typedef enum { A_UNKNOWN, A_SNAPSHOT, A_STREAM, A_COMMAND, A_FILE } answer_t;
+
+/*
+ * the client sends information with each request
+ * this structure is used to store the important parts
+ */
+typedef struct {
+  answer_t type;
+  char *parameter;
+  char *client;
+  char *credentials;
+} request;
+
+/* the iobuffer structure is used to read from the HTTP-client */
+typedef struct {
+  int level;              /* how full is the buffer */
+  char buffer[IO_BUFFER]; /* the data */
+} iobuffer;
+
+/*
+ * this struct is just defined to allow passing all necessary details to a worker thread
+ * "cfd" is for connected/accepted filedescriptor
+ */
+typedef struct {
+  context *pc;
+  int fd;
+} cfd;
 
 /*
  * Standard header to be send along with other header information like mimetype.
@@ -70,27 +150,11 @@
                    "Pragma: no-cache\r\n" \
                    "Expires: Mon, 3 Jan 2000 12:34:56 GMT\r\n"
 
-
 /* commands which can be send to the input plugin */
 typedef enum {
   OUT_CMD_UNKNOWN = 0,
   OUT_CMD_HELLO
 }out_cmd_type;
-
-
-typedef struct _globals globals;
-struct _globals {
-    /* signal fresh frames */
-    pthread_mutex_t db;
-    pthread_cond_t  db_update;
-
-    /* global JPG frame, this is more or less the "database" */
-    unsigned char* buf;
-    int size;
-};
-
-
-
 
 /*
  * Only the following fileypes are supported.
@@ -99,8 +163,8 @@ struct _globals {
  * This table is a 1:1 mapping of files extension to a certain mimetype.
  */
 static const struct {
-  const char *dot_extension;
-  const char *mimetype;
+  const char * dot_extension;
+  const char * mimetype;
 } mimetypes[] = {
   { ".html", "text/html" },
   { ".htm",  "text/html" },
@@ -125,60 +189,11 @@ static const struct {
   { "hello_output", OUT_CMD_HELLO }
 };
 
-/* the webserver determines between these values for an answer */
-typedef enum { A_UNKNOWN, A_SNAPSHOT, A_STREAM, A_COMMAND, A_FILE } answer_t;
-
-/*
- * the client sends information with each request
- * this structure is used to store the important parts
- */
-typedef struct {
-  answer_t type;
-  char *parameter;
-  char *client;
-  char *credentials;
-} request;
-
-/* the iobuffer structure is used to read from the HTTP-client */
-typedef struct {
-  int level;              /* how full is the buffer */
-  char buffer[IO_BUFFER]; /* the data */
-} iobuffer;
-
-/* store configuration for each server instance */
-typedef struct {
-  unsigned int http_port;
-  char const * http_addr;
-  char * credentials;
-  char const * docroot;
-  char const * index;
-  char nocommands;
-} config;
-
-/* context of each server thread */
-typedef struct {
-  int sd;
-  globals *pglobal;
-  pthread_t threadID;
-
-  config conf;
-} context;
-
-/*
- * this struct is just defined to allow passing all necessary details to a worker thread
- * "cfd" is for connected/accepted filedescriptor
- */
-typedef struct {
-  context *pc;
-  int fd;
-} cfd;
-
-
 class HTTPD
 {
 private:
-    static globals* pglobal;
-    static context* server;
+    static globals * pglobal;
+    static context * server;
 
     static void init_iobuffer(iobuffer *iobuf);
     static void init_request(request *req);

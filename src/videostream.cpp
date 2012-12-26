@@ -5,6 +5,7 @@
  */
 
 #include <iostream>
+#include <sstream>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -35,6 +36,7 @@ using namespace std;
 
 #include "videostream.h"
 #include "jpeg_utils.h"
+#include "httpd.h"
 
 #include "../libvideo/framebuffer.h"
 #include "../libvideo/framebufferrgb24.h"
@@ -47,6 +49,14 @@ using namespace std;
 
 using namespace std;
 
+struct Command const VideoStream::Commands[] = 
+  {
+    VideoStream::CommandProcessingMode, 
+    VideoStream::CommandUpdateColour, 
+    
+    { NULL }
+  };
+
 VideoStream::VideoStream(string driver,
 			 string name,
 			 string input,
@@ -57,7 +67,8 @@ VideoStream::VideoStream(string driver,
 			 unsigned int depth,
 			 unsigned int numBuffers
 			 )
-  : done( true )
+  : done( true ),
+    mode( VideoStream::Raw )
 {
   if (0)
     {
@@ -112,6 +123,7 @@ VideoStream::run( )
 {
   FrameBuffer * cameraFrame = 0;
   FrameBuffer * outFrame = 0;
+  unsigned int subSample = 1;
 
   device->startCapture( );
   
@@ -123,13 +135,17 @@ VideoStream::run( )
       outFrame->initialize( cameraFrame->width, cameraFrame->height );
     }
 
-  ColourDefinition colours[] = { ColourDefinition(Pixel(128,160,0,-50,60,128,0,0,0),
-						  Pixel(255,255,128,0,180,180,255,255,255)),
-				 ColourDefinition( Pixel(0,100,0,-255,-255,-255,0,0,0),
-						   Pixel(128,255,128,0,255,0,255,255,255) ),
-				 ColourDefinition( Pixel(0,0,100,-255,-255,-255,0,0,0),
-						   Pixel(255,255,255,255,0,0,255,255,255) ) 
-  };
+  colours.clear();
+
+  colours.push_back( ColourDefinition("Red", 
+				      Pixel(60,60,60,-50,60,128,0,0,0),
+				      Pixel(255,255,128,0,180,180,255,255,255)) );
+  colours.push_back( ColourDefinition( "Green",
+				       Pixel(0,100,0,-255,-255,-255,0,0,0),
+				       Pixel(128,255,128,0,255,0,255,255,255) ) );
+  colours.push_back( ColourDefinition( "Blue",
+				       Pixel(0,0,100,-255,-255,-255,0,0,0),
+				       Pixel(255,255,255,255,0,0,255,255,255) ) );
   
   RawPixel marks[] = { RawPixel(255,0,0), RawPixel(0,255,255), RawPixel(0,0,255) };
 
@@ -139,7 +155,7 @@ VideoStream::run( )
       device->nextFrame( & cameraFrame );
       if ( cameraFrame != 0 )
 	{
-	  ProcessFrame( SegmentColours, cameraFrame, outFrame, 1, colours, sizeof(colours)/sizeof(colours[0]), marks );
+	  ProcessFrame( mode, cameraFrame, outFrame, subSample, colours, marks );
 	}
       device->releaseCurrentBuffer();
       sendImage( outFrame );
@@ -157,8 +173,7 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
 			   FrameBuffer * frame, 
 			   FrameBuffer * outFrame, 
 			   unsigned int subSample, 
-			   ColourDefinition colours[],
-			   unsigned int numColours,
+			   std::vector<ColourDefinition> colours,
 			   RawPixel marks[]
 			   )
 {
@@ -171,7 +186,7 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
 
   if ( ptype == ShowColours )
     {
-      for( unsigned int i = 0; i < numColours; i++ )
+      for( unsigned int i = 0; i < colours.size(); i++ )
 	{
 	  ImageProcessing::swapColours( outFrame, 0,
 					Rect( Point(0,0), Point(outFrame->width, outFrame->height) ), 
@@ -183,7 +198,7 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
 
   if ( ptype == SegmentColours )
     {
-      for( unsigned int i = 0; i < numColours; i++ )
+      for( unsigned int i = 0; i < colours.size(); i++ )
 	{
 	  ImageProcessing::SegmentColours( frame, outFrame,
 					   50,5,10,
@@ -296,3 +311,152 @@ VideoStream::server_thread(void * arg)
   return NULL;
 }
 
+int
+VideoStream::CommandProcessingMode( VideoStream * video, char const * command, char * response, unsigned int respLength )
+{
+  int ret = COMMAND_ERR_COMMAND;
+  char const * s;
+  enum ProcessType processMode;
+
+  response[0] = '\0';
+
+  if ( ( s = strstr(command, "command=processingmode") ) != NULL )
+    {
+      if ( ( s = strstr(s, "mode=") ) != NULL ) 
+	{
+	  s = s + strlen("mode=");
+	  if ( ! strncmp("raw",s, strlen("raw") ) )
+	    {
+	      video->SetMode(Raw);
+	      
+	      strncpy(response, "processingmode: raw", respLength - 1);
+	      response[respLength-1] = '\0';
+
+	      ret = COMMAND_ERR_OK;
+	    }
+	  else if ( ! strncmp("showcolours", s, strlen("showcolours") ) )
+	    {
+	      video->SetMode(ShowColours);
+
+	      strncpy(response, "processingmode: showcolours", respLength - 1);
+	      response[respLength-1] = '\0';
+
+	      ret = COMMAND_ERR_OK;
+	    }
+	  else if ( ! strncmp("segmentcolours", s, strlen("segmentcolours") ) )
+	    {
+	      video->SetMode(SegmentColours);
+	      
+	      strncpy(response, "processingmode: segmentcolours", respLength - 1 );
+	      response[respLength-1] = '\0';
+
+	      ret = COMMAND_ERR_OK;
+	    }
+	  else
+	    {
+	      strncpy(response, "processingmode: ERR_PARAMETER", respLength - 1);
+	      response[respLength - 1] = '\0';
+	      ret = COMMAND_ERR_PARAMETER;
+	    }
+	}
+    }
+  return ret;
+}
+
+int
+VideoStream::CommandUpdateColour( VideoStream * video, char const * command, char * response, unsigned int respLength )
+{
+  int ret = COMMAND_ERR_COMMAND;
+  char const * s;
+  enum ProcessType processMode;
+
+  char name[256];
+  unsigned int redmin;
+  unsigned int greenmin;
+  unsigned int bluemin;
+  unsigned int redmax;
+  unsigned int greenmax;
+  unsigned int bluemax;
+  int redgreenmin;
+  int redbluemin;
+  int greenbluemin;
+  int redgreenmax;
+  int redbluemax;
+  int greenbluemax;
+  unsigned int redratiomin;
+  unsigned int greenratiomin;
+  unsigned int blueratiomin;
+  unsigned int redratiomax;
+  unsigned int greenratiomax;
+  unsigned int blueratiomax;
+  
+  response[0] = '\0';
+
+  if ( ( s = strstr(command, "command=updatecolour") ) != NULL )
+    {
+      s = s + strlen("command=updatecolour");
+      unsigned int conv;
+
+      if ( ( conv = sscanf(s, "& { %[^&] & %d & %d & %d & %d & %d & %d & %d & %d & %d & %d & %d & %d & %d & %d & %d & %d & %d & %d }",
+		  name, 
+		  &redmin, &greenmin, & bluemin, 
+		  &redmax, &greenmax, & bluemax, 
+		  &redgreenmin, &redbluemin, & greenbluemin, 
+		  &redgreenmax, &redbluemax, & greenbluemax, 
+		  &redratiomin, &greenratiomin, & blueratiomin, 
+		  &redratiomax, &greenratiomax, & blueratiomax)
+	     ) == 19 )
+	{
+	  DBG("update colour %s\n", name);
+
+	  ColourDefinition colour( name,
+				   Pixel( redmin, greenmin, bluemin,
+					  redgreenmin, redbluemin, greenbluemin,
+					  redratiomin, greenratiomin, blueratiomin ),
+				   Pixel( redmax, greenmax, bluemax,
+					  redgreenmax, redbluemax, greenbluemax,
+					  redratiomax, greenratiomax, blueratiomax ) 
+				   );
+	  video->UpdateColour( colour );
+
+	  strncpy(response,"colour OK", respLength - 1 );
+	  response[respLength-1] = '\0';
+	  ret = COMMAND_ERR_OK;
+	}
+      else
+	{
+	  strncpy(response,"colour BAD", respLength - 1 );
+	  response[respLength-1] = '\0';
+	  ret = COMMAND_ERR_PARAMETER;
+	}
+    }
+  return ret;
+}
+
+enum VideoStream::ProcessType
+VideoStream::GetMode( void ) const
+{
+  return mode;
+}
+
+void
+VideoStream::SetMode( enum ProcessType m )
+{
+  mode = m;
+}
+
+void
+VideoStream::UpdateColour( ColourDefinition const col )
+{
+  for( vector<ColourDefinition>::iterator i = colours.begin();
+       i != colours.end();
+       ++i)
+    {
+      if ( (*i).name == col.name )
+	{
+	  (*i).min = col.min;
+	  (*i).max = col.max;
+	  break;
+	}
+    }
+}

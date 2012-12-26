@@ -9,7 +9,7 @@ class ColourDefinition
 {
  public:
   ColourDefinition();
-  ColourDefinition( Pixel min, Pixel max );
+  ColourDefinition( std::string name, Pixel min, Pixel max );
   ~ColourDefinition();
   ColourDefinition(const ColourDefinition & rhs);
   ColourDefinition & operator=(const ColourDefinition & rhs);
@@ -24,6 +24,7 @@ class ColourDefinition
   friend std::ostream & operator<<(std::ostream & os, ColourDefinition const & cd);
   friend std::istream & operator>>(std::istream & is, ColourDefinition & cd);
 
+  std::string name;
   Pixel min;
   Pixel max;
 };

@@ -5,10 +5,10 @@
 #include <string>
 
 #include <boost/program_options.hpp>
-
-#include "videostream.h"
-#include "httpd.h"
 #include <arpa/inet.h>
+
+#include "httpd.h"
+#include "videostream.h"
 
 using namespace std;
 
@@ -163,6 +163,8 @@ main( int argc, char ** argv )
       video->server.conf.docroot = docroot.c_str();
       video->server.conf.index = index.c_str();
       video->server.conf.nocommands = 0;
+      video->server.conf.commands = video->Commands;
+      video->server.conf.video = video;
 
 #if defined(DEBUG)
       cout << "Starting video thread" << endl;

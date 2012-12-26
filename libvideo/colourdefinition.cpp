@@ -3,19 +3,22 @@
 #include <fstream>
 
 ColourDefinition::ColourDefinition() :
+  name(""),
   min(255,255,255),
   max(0,0,0)
 {
 
 }
 
-ColourDefinition::ColourDefinition( Pixel min, Pixel max )
-  :min(min),
+ColourDefinition::ColourDefinition( std::string name, Pixel min, Pixel max )
+  :name(name),
+   min(min),
    max(max)
 {
 }
 
 ColourDefinition::ColourDefinition(const ColourDefinition & rhs) :
+  name(rhs.name),
   min(rhs.min),
   max(rhs.max)
 {
@@ -29,6 +32,7 @@ ColourDefinition::~ColourDefinition()
 
 ColourDefinition & ColourDefinition::operator=(const ColourDefinition & c)
 {
+  name = c.name;
   min.red = c.min.red;
   min.green = c.min.green;
   min.blue = c.min.blue;          
@@ -55,6 +59,7 @@ ColourDefinition & ColourDefinition::operator=(const ColourDefinition & c)
 void 
 ColourDefinition::reset()
 {
+  name = "";
   min = Pixel(255,255,255);
   max = Pixel(0,0,0);
 }
@@ -130,25 +135,27 @@ ColourDefinition::isMatch(const Pixel & p) const
   //  std::cout << "\n";
   
 
-  return p.red >= min.red               &&
-         p.green >= min.green           &&
-         p.blue >= min.blue             &&
-         p.red_green >= min.red_green   &&
-         p.red_blue >= min.red_blue     &&
-         p.green_blue >= min.green_blue &&
-         p.red_ratio >= min.red_ratio   &&
-         p.green_ratio >= min.green_ratio &&
-         p.blue_ratio >= min.blue_ratio &&
+  return true &&
+    p.red >= min.red               &&
+    p.green >= min.green           &&
+    p.blue >= min.blue             &&
+    p.red_green >= min.red_green   &&
+    p.red_blue >= min.red_blue     &&
+    p.green_blue >= min.green_blue &&
+    p.red_ratio >= min.red_ratio   &&
+    p.green_ratio >= min.green_ratio &&
+    p.blue_ratio >= min.blue_ratio &&
 
-         p.red <= max.red               &&
-         p.green <= max.green           &&
-         p.blue <= max.blue             &&
-         p.red_green <= max.red_green   &&
-         p.red_blue <= max.red_blue     &&
-         p.green_blue <= max.green_blue &&
-         p.red_ratio <= max.red_ratio   &&
-         p.green_ratio <= max.green_ratio &&
-         p.blue_ratio <= max.blue_ratio;
+    p.red <= max.red               &&
+    p.green <= max.green           &&
+    p.blue <= max.blue             &&
+    p.red_green <= max.red_green   &&
+    p.red_blue <= max.red_blue     &&
+    p.green_blue <= max.green_blue &&
+    p.red_ratio <= max.red_ratio   &&
+    p.green_ratio <= max.green_ratio &&
+    p.blue_ratio <= max.blue_ratio && 
+         true;
 }
 
 

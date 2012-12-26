@@ -20,7 +20,9 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA    #
 #                                                                              #
 *******************************************************************************/
+
 #include <iostream>
+#include <string>
 #include <cstdlib>
 
 #include <string.h>
@@ -39,8 +41,8 @@
 
 #include "httpd.h"
 
-context* HTTPD::server;
-globals* HTTPD::pglobal;
+context * HTTPD::server;
+globals * HTTPD::pglobal;
 
 bool HTTPD::ClientRequest(false);
 
@@ -479,65 +481,56 @@ Return Value: -
 void 
 HTTPD::ParseCommand(int fd, char const * parameter) 
 {
-  char command[256];
+  char tmpCommand[256];
+  char tmp[256];
   char const * pcommand;
+  char response[10];
 
   char buffer[BUFFER_SIZE] = {0};
   char ret_s[10] = {0};
 
   /* sanity check of parameter-string */
-  if ( parameter == NULL || strlen(parameter) >= 100 || strlen(parameter) == 0 ) {
+  if ( parameter == NULL || strlen(parameter) >= 256 || strlen(parameter) == 0 ) {
     DBG("parameter string looks bad\n");
     send_error(fd, 400, "Parameter-string of command does not look valid.");
     return;
   }
+  struct Command const * icom = server->conf.commands;
 
-  DBG("parameter is: %s\n", parameter);
+  int done = -1;
 
-  /* search for required variable "command" */
-  if ( (pcommand = strstr(parameter, "command=")) == NULL ) {
-    DBG("no command specified\n");
-    send_error(fd, 400, "no GET variable \"command=...\" found, it is required to specify which command to execute");
-    return;
-  }
-  
-  char * out = & command[0];
-  pcommand = pcommand + strlen("command=");
-  while( ( * pcommand != '\0' ) && ( * pcommand != '&' ) && ( out < command + sizeof(command) - 1 ) )
+  while( ( icom != NULL ) && ( icom->command != NULL ) )
     {
-      *out++ = *pcommand++;
+      int ret = icom->command( server->conf.video, parameter, response, sizeof(response) );
+      if ( ret > 0 )
+	{
+	  done = ret;
+	  break;
+	}
+      else if ( ret == 0 )
+	{
+	  done = ret;
+	}
+      icom++;
     }
-  *out = '\0';
 
-  DBG("command is: %s\n", command );
-
-  /* Send HTTP-response */
-  sprintf(buffer, "HTTP/1.0 200 OK\r\n" \
-                  "Content-type: text/plain\r\n" \
-                  STD_HEADER \
-                  "\r\n" \
-                  "%s: %s", command, ret_s);
-
-  write(fd, buffer, strlen(buffer));
-
+  if ( done >= 0 )
+    {
+      /* Send HTTP-response */
+      sprintf(buffer, "HTTP/1.0 200 OK\r\n"		\
+	      "Content-type: text/plain\r\n"		\
+	      STD_HEADER				\
+	      "\r\n"					\
+	      "%s", response);
+      
+      write(fd, buffer, strlen(buffer));
+    }
+  else
+    {
+      DBG("Unknown command %s", tmpCommand );
+    }
   //  if (ccommand != NULL) free(command);
 }
-
-#if 0
-void HTTPD::input_cmd(in_cmd_type cmd, float value, char* res_str)
-{
-    int res = -1;
-
-    //pthread_mutex_lock(&controls_mutex);
-
-    switch(cmd) {
-    default:
-        res = -1;
-    }
-
-    //pthread_mutex_unlock(&controls_mutex);
-}
-#endif
 
 /******************************************************************************
 Description.: Serve a connected TCP-client. This thread function is called
@@ -558,12 +551,15 @@ void* HTTPD::client_thread( void *arg ) {
   cfd lcfd; /* local-connected-file-descriptor */
 
   /* we really need the fildescriptor and it must be freeable by us */
-  if (arg != NULL) {
-    memcpy(&lcfd, arg, sizeof(cfd));
-    free(arg);
-  }
+  if (arg != NULL) 
+    {
+      memcpy(&lcfd, arg, sizeof(cfd));
+      free(arg);
+    }
   else
-    return NULL;
+    {
+      return NULL;
+    }
 
   /* initializes the structures */
   init_iobuffer(&iobuf);
@@ -588,16 +584,17 @@ void* HTTPD::client_thread( void *arg ) {
     req.type = A_COMMAND;
 
     /* advance by the length of known string */
-    if ( (pb = strstr(buffer, "GET /?action=command")) == NULL ) {
-      DBG("HTTP request seems to be malformed\n");
-      send_error(lcfd.fd, 400, "Malformed HTTP request");
-      close(lcfd.fd);
-      return NULL;
-    }
+    if ( (pb = strstr(buffer, "GET /?action=command")) == NULL ) 
+      {
+	DBG("HTTP request seems to be malformed\n");
+	send_error(lcfd.fd, 400, "Malformed HTTP request");
+	close(lcfd.fd);
+	return NULL;
+      }
     pb += strlen("GET /?action=command");
 
     /* only accept certain characters */
-    len = MIN(MAX(strspn(pb, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-=&1234567890."), 0), 100);
+    len = MIN(MAX(strspn(pb, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-=&1234567890.{}"), 0), 100);
     req.parameter = (char*)malloc(len+1);
     if ( req.parameter == NULL ) {
       exit(EXIT_FAILURE);
