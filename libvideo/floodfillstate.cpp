@@ -88,3 +88,23 @@ FloodFillState::averageColour( void ) const
 
   return RawPixel( red, green, blue );
 }
+
+int
+FloodFillState::x( void ) const
+{
+  int result = -1;
+  if ( _size > 0 )
+    {
+      result = _sumX / _size;
+    }
+}
+
+int
+FloodFillState::y( void ) const
+{
+  int result = -1;
+  if ( _size > 0 )
+    {
+      result = _sumY / _size;
+    }
+}

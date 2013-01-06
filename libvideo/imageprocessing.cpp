@@ -1,4 +1,5 @@
 #include <iostream>
+#include <list>
 
 #include "pixel.h"
 #include "framebuffer.h"
@@ -8,15 +9,12 @@
 #include "colourdefinition.h"
 #include "integralimage.h"
 #include "quadtreedecomposition.h"
+#include "visionobject.h"
 
 unsigned int const STACK_SIZE = ( 320 * 320 );
 
 unsigned int const BRIGHT_PIXEL = 256;
 unsigned int const DARK_PIXEL = 4;
-
-#ifndef Q_NODEBUG
-#include <iostream>
-#endif
 
 enum ImageProcessing::ErrorCode
 ImageProcessing::doFloodFill( FrameBuffer const * frame,
@@ -267,7 +265,8 @@ ImageProcessing::SegmentColours( FrameBuffer const * frame,
 				 unsigned int minSize,
 				 unsigned int subSample,
 				 ColourDefinition const & target,
-				 RawPixel const & mark
+				 RawPixel const & mark,
+				 std::list<VisionObject> & results
 				 )
 {
   FrameBufferIterator it( frame );
@@ -325,6 +324,20 @@ ImageProcessing::SegmentColours( FrameBuffer const * frame,
 		      drawBresenhamLine( outFrame, brx, bry, brx, tly, mark );
 		      drawBresenhamLine( outFrame, brx, tly, tlx, tly, mark );
 		      //		      swapColours( outFrame, 0, state.bBox(), 1, ColourDefinition( Pixel(colour), Pixel(colour) ), state.averageColour() );
+		      VisionObject vo( target.name, state.size(), state.x(), state.y(), state.averageColour(), state.bBox() );
+
+		      std::list<VisionObject>::iterator i;
+
+		      for( i = results.begin();
+			   i != results.end();
+			   ++i)
+			{
+			  if ( (*i).size < vo.size )
+			    {
+			      break;
+			    }
+			}
+		      results.insert(i, vo );
 		    }
 		  count = 0;
 		}

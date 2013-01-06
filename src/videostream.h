@@ -35,6 +35,16 @@ public:
     Segmentation
   };
 
+  enum VideoControl 
+  {
+    IllegalControl,
+    Brightness,
+    Hue,
+    Saturation,
+    Contrast,
+    Sharpness
+  };
+
   VideoStream(string driver,
 	      string name,
 	      string input,
@@ -43,7 +53,8 @@ public:
 	      unsigned int width,
 	      unsigned int height,
 	      unsigned int depth,
-	      unsigned int numBuffers
+	      unsigned int numBuffers,
+	      unsigned int subSample
 	      );
 
   virtual ~VideoStream();
@@ -80,6 +91,7 @@ public:
 
   static int CommandProcessingMode( VideoStream * video, char const * command, char * response, unsigned int respLength );
   static int CommandUpdateColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
+  static int CommandVideoControl( VideoStream * video, char const * command, char * response, unsigned int respLength );
 
  private:
   VideoDevice * device;
@@ -105,6 +117,9 @@ public:
 
  public:
   std::vector<ColourDefinition> colours;
+
+ public:
+  unsigned int subSample;
 };
 
 #endif /* __VIDEOSTREAM_H__ */

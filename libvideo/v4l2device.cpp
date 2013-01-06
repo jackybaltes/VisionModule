@@ -1,6 +1,7 @@
 // $Id: v4l2device.cpp,v 1.2.2.8 2004/12/20 02:38:58 cvs Exp $
 //
 
+#include <cstring>
 #include <cstdlib>
 #include <errno.h>
 #include <fcntl.h>
@@ -1180,22 +1181,66 @@ bool V4L2Device::isInterlaced( void )
   return ( fmt.fmt.pix.field != V4L2_FIELD_ALTERNATE );
 }
 
-int V4L2Device::setControl(struct v4l2_control vc)
+int 
+V4L2Device::setControl(struct v4l2_control * vc)
 {
 #ifdef DEBUG
   std::cout << "V4L2Device::setControl() called\n";
   std::cout << "file descriptor: " << fd << std::endl;
-  std::cout << "control id: " << fd << std::endl;
+  std::cout << "control id: " << vc->id << std::endl;
 #endif
-  return v4l2_ioctl (fd, VIDIOC_S_CTRL, &vc);
+  int ret = -1;
+  struct v4l2_queryctrl queryctrl;
+
+  memset (&queryctrl, 0, sizeof (queryctrl));
+  queryctrl.id = vc->id;
+
+  if ( -1 == v4l2_ioctl( fd,  VIDIOC_QUERYCTRL, &queryctrl)) 
+    {
+      if (errno != EINVAL) 
+	{ 
+	  ret = -1;
+	  goto exit;
+        } 
+      else 
+	{
+	  std::cerr << vc->id << " video control is not supported" << std::endl;
+	  ret = -1;
+	  goto exit;
+        }
+      
+    } 
+  else if (queryctrl.flags & V4L2_CTRL_FLAG_DISABLED) 
+    {
+	  std::cerr << vc->id << " video control is disabled" << std::endl;
+	  ret = -1;
+	  goto exit;
+    } 
+  else 
+    {
+      if ( vc->value == -1 ) 
+	{
+	  vc->value = queryctrl.default_value;
+	}
+
+      if ( ( ret = v4l2_ioctl (fd, VIDIOC_S_CTRL, vc) ) < 0 )
+	{
+	  std::cerr << "VIDIOC_S_CTRL of " << vc->id << " to value " << vc->value << " failed with error code " << ret;
+	  perror ("VIDIOC_S_CTRL");
+	}
+    }
+ exit:
+  return ret;
 }
 
-int V4L2Device::getControl(struct v4l2_control * vc)
+int 
+V4L2Device::getControl(struct v4l2_control * vc)
 {
   return v4l2_ioctl (fd, VIDIOC_G_CTRL, vc);
 }
 
-int V4L2Device::queryControl(struct v4l2_queryctrl * qc)
+int 
+V4L2Device::queryControl(struct v4l2_queryctrl * qc)
 {
 #ifdef DEBUG
   std::cout << "V4L2Device::queryControl() called\n";
@@ -1204,6 +1249,145 @@ int V4L2Device::queryControl(struct v4l2_queryctrl * qc)
   return v4l2_ioctl (fd, VIDIOC_QUERYCTRL, qc);
 }
 
+int
+V4L2Device::SetBrightness( unsigned int val )
+{
+  struct v4l2_control vc;
+  memset( &vc, 0, sizeof(vc) );
+
+  vc.id = V4L2_CID_BRIGHTNESS;
+  if ( val > 0 )
+    {
+      vc.value = val;
+    }
+  return setControl( & vc );
+}
+
+int
+V4L2Device::GetBrightness( void )
+{
+  struct v4l2_control vc;
+  memset( &vc, 0, sizeof(vc) );
+
+  vc.id = V4L2_CID_BRIGHTNESS;
+  unsigned int ret = getControl( & vc );  
+  unsigned int result = -1;
+  if ( ret == 0 )
+    {
+      result = vc.value;
+    }
+  else
+    {
+      std::cerr << "getcontrol failed" << std::endl;
+      result = -1;
+    }
+  return result;
+}
+
+int
+V4L2Device::SetContrast( unsigned int val )
+{
+  struct v4l2_control vc;
+  memset( &vc, 0, sizeof(vc) );
+
+  vc.id = V4L2_CID_CONTRAST;
+  if ( val > 0 )
+    {
+      vc.value = val;
+    }
+  return setControl( & vc );
+}
+
+int
+V4L2Device::GetContrast( void )
+{
+  struct v4l2_control vc;
+  memset( &vc, 0, sizeof(vc) );
+
+  vc.id = V4L2_CID_CONTRAST;
+  unsigned int ret = getControl( & vc );  
+  unsigned int result = -1;
+  if ( ret == 0 )
+    {
+      result = vc.value;
+    }
+  else
+    {
+      std::cerr << "getcontrast failed" << std::endl;
+      result = -1;
+    }
+  return result;
+}
+
+int
+V4L2Device::SetSaturation( unsigned int val )
+{
+  struct v4l2_control vc;
+  memset( &vc, 0, sizeof(vc) );
+
+  vc.id = V4L2_CID_SATURATION;
+  if ( val > 0 )
+    {
+      vc.value = val;
+    }
+  return setControl( & vc );
+}
+
+int
+V4L2Device::GetSaturation( void )
+{
+  struct v4l2_control vc;
+  memset( &vc, 0, sizeof(vc) );
+
+  vc.id = V4L2_CID_SATURATION;
+  unsigned int ret = getControl( & vc );  
+  unsigned int result = -1;
+  if ( ret == 0 )
+    {
+      result = vc.value;
+    }
+  else
+    {
+      std::cerr << "getsaturation failed" << std::endl;
+      result = -1;
+    }
+  return result;
+}
+
+int
+V4L2Device::SetSharpness( unsigned int val )
+{
+  struct v4l2_control vc;
+  memset( &vc, 0, sizeof(vc) );
+
+  vc.id = V4L2_CID_SHARPNESS;
+  if ( val > 0 )
+    {
+      vc.value = val;
+    }
+  return setControl( & vc );
+}
+
+int
+V4L2Device::GetSharpness( void )
+{
+  struct v4l2_control vc;
+  memset( &vc, 0, sizeof(vc) );
+
+  vc.id = V4L2_CID_SHARPNESS;
+  unsigned int ret = getControl( & vc );  
+  unsigned int result = -1;
+  if ( ret == 0 )
+    {
+      result = vc.value;
+    }
+  else
+    {
+      std::cerr << "getsharpness failed" << std::endl;
+      result = -1;
+    }
+  return result;
+}
 
 
 

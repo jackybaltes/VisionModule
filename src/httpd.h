@@ -57,6 +57,7 @@
 typedef struct _globals globals;
 
 class VideoStream;
+class Serial;
 
 struct _globals 
 {
@@ -94,6 +95,7 @@ typedef struct {
   char nocommands;
   struct Command const * commands;
   VideoStream * video;
+  Serial * serial;
 } config;
 
 /* context of each server thread */
@@ -150,12 +152,6 @@ typedef struct {
                    "Pragma: no-cache\r\n" \
                    "Expires: Mon, 3 Jan 2000 12:34:56 GMT\r\n"
 
-/* commands which can be send to the input plugin */
-typedef enum {
-  OUT_CMD_UNKNOWN = 0,
-  OUT_CMD_HELLO
-}out_cmd_type;
-
 /*
  * Only the following fileypes are supported.
  *
@@ -179,14 +175,6 @@ static const struct {
   { ".swf",  "application/x-shockwave-flash" },
   { ".cab",  "application/x-shockwave-flash" },
   { ".jar",  "application/java-archive" }
-};
-
-/* mapping between command string and command type */
-static const struct {
-  const char *string;
-  const out_cmd_type cmd;
-} out_cmd_mapping[] = {
-  { "hello_output", OUT_CMD_HELLO }
 };
 
 class HTTPD

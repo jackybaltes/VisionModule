@@ -37,7 +37,7 @@ rel="stylesheet">
 
       <td>
       <div id="video"><noscript><img src="/?action=snapshot" /></noscript> 
-  <body onload="createImageLayer();"></body> 
+  <body onload="InitVisionModule()"></body> 
 
   <canvas id="videocanvas" width="320" height="240" style="border: 1px solid rgb(0, 0, 0);"> </canvas> </div>
 
@@ -87,7 +87,7 @@ Configuration</a></li>
 <div id="colourdefinition">
 <p> Create and modify colour definitions.</p>
 
-<input onchange="changeColourDefinition()" value="Red" name="colourname" id="colourName" list="colours"><button onclick="addColour()" value="Add Colour" name="addcolour" type="button">Add Colour </button><button onclick="delColour()" value="Delete Colour" name="delcolour" type="button">Delete Colour </button><br>
+<input onchange="onchangeColourDefinition()" value="Red" name="colourname" id="colourName" list="colours"><button onclick="addColour()" value="Add Colour" name="addcolour" type="button">Add Colour </button><button onclick="delColour()" value="Delete Colour" name="delcolour" type="button">Delete Colour </button><br>
 
 <table style="text-align: center; width: 600px;" display="none" border="1" cellpadding="1" cellspacing="1">
 
@@ -183,13 +183,13 @@ Max</th>
 
     <tr>
 
-      <td class="control">Brightness <input maxlength="4" size="4" value="128" name="brightness" min="0" max="255" id="brightnessButton" class="control"></td>
+      <td class="control">Brightness <input maxlength="4" size="4" value="128" name="brightness" min="-1" max="255" id="brightnessButton" class="control" onchange="OnChangeVideoControl(this)"></td>
 
-      <td class="control">Contrast <input maxlength="4" size="4" value="32" name="contrast" min="0" max="255" id="contrastButton" class="control"></td>
+      <td class="control">Contrast <input maxlength="4" size="4" value="32" name="contrast" min="-1" max="255" id="contrastButton" class="control" onchange="OnChangeVideoControl(this)"></td>
 
-      <td class="control">Saturation <input maxlength="4" size="4" value="38" name="saturation" min="0" max="255" id="saturationButton" class="control"></td>
+      <td class="control">Saturation <input maxlength="4" size="4" value="38" name="saturation" min="-1" max="255" id="saturationButton" class="control" onchange="OnChangeVideoControl(this)"></td>
 
-      <td class="control">Sharpness <input maxlength="4" size="4" value="128" name="sharpness" min="0" max="255" id="sharpnessButton" class="control"></td>
+      <td class="control">Sharpness <input maxlength="4" size="4" value="128" name="sharpness" min="-1" max="255" id="sharpnessButton" class="control" onchange="OnChangeVideoControl(this)"></td>
 
     </tr>
 

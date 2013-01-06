@@ -26,15 +26,16 @@ ADD_EXECUTABLE( vision_module
   libvideo/rect.cpp
   libvideo/v4l2device.cpp
   libvideo/videodevice.cpp
+  libvideo/visionobject.cpp
   src/main.cpp
   src/videostream.cpp
   src/httpd.cpp
   src/jpeg_utils.cpp
+  src/serial.cpp
 )
 
 ADD_DEFINITIONS(
   -DENABLE_V4L2
-  -DDEBUG
 )
 
 INCLUDE_DIRECTORIES(

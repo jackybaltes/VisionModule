@@ -12,26 +12,25 @@ function stateCallback() {
 
   switch( rstate )
   {
-    // uninitialized
-    case 0:
-    // loading
-    case 1:
-    // loaded
-    case 2:
-    // interactive
-    case 3:
-    break;
-    // complete, so act on response
-    case 4:
-    // check http status
+      // uninitialized
+  case 0:
+      // loading
+  case 1:
+      // loaded
+  case 2:
+      // interactive
+  case 3:
+      break;
+      // complete, so act on response
+  case 4:
+      // check http status
       try {
-        stat = xmlHttp.status;
+          stat = xmlHttp.status;
       }
       catch (err) {
         stat = "xmlHttp.status does not exist";
       }
-      if( stat == 200 )    // success
-      {
+      if( stat == 200 ) {   // success
           AJAX_response(xmlHttp.responseText);
       }
       // loading not successfull, e.g. page not available
@@ -94,34 +93,19 @@ function AJAX_get(url) {
   xmlHttp.send(null);
 }
 
-// var pretab = "";
-// var pretd = "";
-// function extendmenu(mid, aobject) {
-//     var tab_name = "sc"+mid;
-//     var td_name = "td"+mid;
-    
-//     if(pretab != "") {
-//         document.getElementById(pretab).style.display = "none"
-// 	document.getElementById(pretd).style.backgroundColor="#FFFFFF";
-// 	document.getElementById(pretd).style.fontWeight="normal";
-// 	document.getElementById(pretd).style.color="#000000";
-//     }
-    
-//     document.getElementById(tab_name).style.display = "block"
-//     document.getElementById(td_name).style.backgroundColor="navy";
-//     document.getElementById(td_name).style.fontWeight="bold";
-//     document.getElementById(td_name).style.color="#FFFFFF";
-//     pretab = tab_name;
-//     pretd = td_name;
-// }
-
 function SendCommand(cmd) {
     document.getElementById('hints').firstChild.nodeValue = "Send command: " + cmd;
     AJAX_get('/?action=command&command='+ cmd)
 }
 
 function AJAX_response(text) {
-//    document.getElementById('hints').firstChild.nodeValue = "Got response: " + text;
+    document.getElementById('hints').firstChild.nodeValue = "Got response: " + text;
+    console.log("|%s|",text.substring(0,32));
+    if ( text.substring(0,15) == "processingmode=") {
+	ResponseProcessingMode( text.substring(15) );
+    } else if ( text.substring(0,8) == "control=" ) {
+	ResponseControl(text.substring(8));
+    }
 }
 
 function KeyDown(ev) {
@@ -151,11 +135,6 @@ function KeyDown(ev) {
 
 document.onkeydown = KeyDown;
 
-/* Copyright (C) 2007 Richard Atterer, richard©atterer.net
-   This program is free software; you can redistribute it and/or modify it
-   under the terms of the GNU General Public License, version 2. See the file
-   COPYING for details. */
-
 var imageNr = 0; // Serial number of current image
 var paused = false;  
 
@@ -168,57 +147,24 @@ function onclickPausePlayButton(b) {
 	b.value = "Pause";
 	b.innerHTML = "Pause";
     }
-    if (! paused ) createImageLayer();
+    if (! paused ) CreateImageLayer();
 }
 
-function createImageLayer() {
+function CreateImageLayer() {
     var img = new Image();
     img.style.position = "absolute";
     img.style.zIndex = 0;
     img.onload = imageOnload;
-    //  img.onclick = imageOnclick;
     img.src = "/?action=snapshot&n=" + (++imageNr);
-    var ctx=document.getElementById("videocanvas").getContext("2d");    
+//    var ctx=document.getElementById("videocanvas").getContext("2d");    
     ctx.drawImage(img, 0,0);
-//    InitCanvas();
 }
 
-// Two layers are always present (except at the very beginning), to avoid flicker
 function imageOnload() {
-//  this.style.zIndex = imageNr; // Image finished, bring to front!
-//  while (1 < finished.length) {
-//    var del = finished.shift(); // Delete old image(s) from document
-//    del.parentNode.removeChild(del);
-//  }
-//  finished.push(this);
-    var ctx=document.getElementById("videocanvas").getContext("2d");    
+//    var ctx=document.getElementById("videocanvas").getContext("2d");    
     ctx.drawImage(this, 0,0);
-//    InitCanvas();
-    if (!paused) createImageLayer();
+    if (!paused) CreateImageLayer();
 }
-
-// function createImageLayer() {
-//     var img = new Image();
-//     img.style.position = "absolute";
-//     //img.style.zIndex = -1;
-//     img.onload = imageOnload;
-//     //  img.onclick = imageOnclick;
-//     img.src = "/?action=snapshot&n=" + (++imageNr);
-//     var video = document.getElementById("video");
-//     var ctx=video.getContext("2d");    
-//     ctx.drawImage(img, 0,0);
-// }
-
-// // Two layers are always present (except at the very beginning), to avoid flicker
-// function imageOnload() {
-//   this.style.zIndex = imageNr; // Image finished, bring to front!
-//   while (1 < finished.length) {
-//     var del = finished.shift(); // Delete old image(s) from document
-//     //del.parentNode.removeChild(del);
-//   }
-//   finished.push(this);
-//   if (!paused) createImageLayer();
-// }
 
 function OnChangeProcessingMode() {
     sb = document.getElementById('processingMode');
@@ -229,9 +175,6 @@ function OnChangeProcessingMode() {
 
 var count = 0;
 function InitCanvas() {
-    var ctx=document.getElementById("videocanvas").getContext("2d");
-    var width=320;
-    var height=240;
     var imgd = ctx.getImageData(0, 0, width, height);
     var pix = imgd.data;
     var bpp = 4;
@@ -302,4 +245,187 @@ function onchangeColourDefinition( ) {
 		255 + "&" + 
 		255 + "}"
 	       );
+}
+
+function onmouseupVideo( event ) {
+    mouseDown = false;
+}
+
+function onmousedownVideo( event ) {
+    mouseDown = true;
+}
+
+function onmouseclickVideo( event ) {
+    if ( mouseDown ) {
+	var x = event.clientX - clientRect.left;
+	var y = event.clientY - clientRect.top;
+    
+	//console.log("Reading position (" + x + "," + y + ")");
+
+	var imgd = ctx.getImageData( x, y, 1, 1 );
+	var pix = imgd.data;
+	
+	//console.log("Pixel " + pix[0] + "," + pix[1] + "," + pix[2] );
+	AddPixelToColourDefinition( pix );
+    }
+}
+
+var video;
+var ctx;
+var width;
+var height;
+var clientRect;
+var mouseDown;
+
+function InitVisionModule() {
+    video=document.getElementById("videocanvas");
+    ctx=video.getContext("2d");
+    width=video.width;
+    height=video.height;
+    clientRect = video.getBoundingClientRect();
+
+    video.addEventListener('mousedown',onmousedownVideo, false);
+    video.addEventListener('mousemove',onmouseclickVideo, false);
+    video.addEventListener('mouseup',onmouseupVideo, false);
+    video.addEventListener('mouseout',onmouseupVideo, false);
+
+    mouseDown = false;
+
+    SendCommand("processingmode" + "&" + "mode=query");
+    
+    CreateImageLayer();
+}
+
+function AddPixelToColourDefinition( pix ) {
+    var red = pix[0];
+    var green = pix[1];
+    var blue = pix[2];
+
+    if ( ( ( red > 0 ) || ( green > 0 ) || ( blue > 0 ) ) && ( ( red != 255 ) || ( green != 0 ) || ( blue != 0 ) ) ) {
+	var redgreen = red - green;
+	var redblue = red - blue;
+	var greenblue = green - blue;
+	var sum = 1 + red + green + blue;
+	var redratio = red / sum;
+	var greenratio = green / sum;
+	var blueratio = blue / sum;
+	var b;
+	var changed = false;
+	
+//	console.log("adding pixel " + red + "," + green + "," + blue + "," + redgreen + "," + redblue + "," + greenblue + "," + redratio + "," + greenratio + "," + blueratio );
+	
+	b = document.getElementById("redminButton");
+//	console.log("Typeof: b.value=" + typeof(b.value) );
+//	console.log("Typeof: red=" + typeof(red) );
+	
+	if ( parseInt(b.value,10) > red ) {
+	    b.value = red;
+	    changed = true;
+	}
+	
+	b = document.getElementById("greenminButton");
+	if ( parseInt(b.value,10) > green ) {
+	    b.value = green;
+	    changed = true;
+	}
+	
+	b = document.getElementById("blueminButton");
+	if ( parseInt(b.value,10) > blue ) {
+	    b.value = blue;
+	    changed = true;
+	}
+	
+	b = document.getElementById("redmaxButton");
+	if ( parseInt(b.value,10) < red ) {
+	    b.value = red;
+	    changed = true;
+	}
+	
+	b = document.getElementById("greenmaxButton");
+	if ( parseInt(b.value,10) < green ) {
+	    b.value = green;
+	    changed = true;
+	}
+	
+	b = document.getElementById("bluemaxButton");
+	if ( parseInt(b.value,10) < blue ) {
+	    b.value = blue;
+	    changed = true;
+	}
+	
+	b = document.getElementById("redgreenminButton");
+	if ( parseInt(b.value,10) > redgreen ) {
+	    b.value = redgreen;
+	    changed = true;
+	}
+	
+	b = document.getElementById("redblueminButton");
+	if ( parseInt(b.value,10) > redblue ) {
+	    b.value = redblue;
+	    changed = true;
+	}
+	
+	b = document.getElementById("greenblueminButton");
+	if ( parseInt(b.value,10) > greenblue ) {
+	    b.value = greenblue;
+	    changed = true;
+	}
+	
+	b = document.getElementById("redgreenmaxButton");
+	if ( parseInt(b.value,10) < redgreen ) {
+	    b.value = redgreen;
+	    changed = true;
+	}
+	
+	b = document.getElementById("redbluemaxButton");
+	if ( parseInt(b.value,10) < redblue ) {
+	    b.value = redblue;
+	    changed = true;
+	}
+	
+	b = document.getElementById("greenbluemaxButton");
+	if ( parseInt(b.value,10) < greenblue ) {
+	    b.value = greenblue;
+	    changed = true;
+	}
+	console.log("Changed = " + changed );
+	if ( changed ) {
+	    onchangeColourDefinition();
+	}
+    }
+}
+
+function ResponseProcessingMode( text ) {
+    var s = document.getElementById("processingMode");
+
+    if ( text == "raw" ) {
+	s.value = "raw";
+    } else if ( text == "showcolours" ) {
+	s.value = "showcolours";
+    } else if ( text == "segmentcolours" ) {
+	s.value = "segmentcolours";
+    }	
+} 
+
+function ResponseControl( text ) {
+    var index = text.indexOf("&");
+    var control;
+    var value = ""
+
+    if ( index > 0 ) {
+	control = text.substring(0,index);
+    }
+    else {
+	control = text;
+    }
+    
+    if ( text.substring(index+1,index+1+6) == "value=") {
+	value = text.substring(index+1+6);
+    }
+    var ctrl = document.getElementById(control + "Button");
+    ctrl.value = parseInt(value,10);
+}
+
+function OnChangeVideoControl( ctrl ) {
+    SendCommand("videocontrol" + "&" + "control=" + ctrl.name + "&value=" + ctrl.value); 
 }

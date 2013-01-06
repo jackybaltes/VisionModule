@@ -1,3 +1,5 @@
+#include <vector>
+
 #include "pixel.h"
 #include "framebuffer.h"
 #include "imageprocessing.h"

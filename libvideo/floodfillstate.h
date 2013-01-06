@@ -23,6 +23,9 @@ class FloodFillState
   inline void setSumX( unsigned int sumX ) { _sumX = sumX; };
   inline void setSumY( unsigned int sumY ) { _sumY = sumY; };
 
+  int x( void ) const;
+  int y( void ) const;
+
   RawPixel averageColour( void ) const;
 
   void initialize( void );

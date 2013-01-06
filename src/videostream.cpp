@@ -45,7 +45,7 @@ using namespace std;
 #include "../libvideo/pixel.h"
 #include "../libvideo/imageprocessing.h"
 
-#define WWW_FOLDER          "./www/"
+#include "serial.h"
 
 using namespace std;
 
@@ -53,6 +53,7 @@ struct Command const VideoStream::Commands[] =
   {
     VideoStream::CommandProcessingMode, 
     VideoStream::CommandUpdateColour, 
+    VideoStream::CommandVideoControl,
     
     { NULL }
   };
@@ -65,10 +66,12 @@ VideoStream::VideoStream(string driver,
 			 unsigned int width,
 			 unsigned int height,
 			 unsigned int depth,
-			 unsigned int numBuffers
+			 unsigned int numBuffers,
+			 unsigned int subSample
 			 )
   : done( true ),
-    mode( VideoStream::Raw )
+    mode( VideoStream::Raw ),
+    subSample( subSample )
 {
   if (0)
     {
@@ -123,7 +126,6 @@ VideoStream::run( )
 {
   FrameBuffer * cameraFrame = 0;
   FrameBuffer * outFrame = 0;
-  unsigned int subSample = 1;
 
   device->startCapture( );
   
@@ -200,11 +202,30 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
     {
       for( unsigned int i = 0; i < colours.size(); i++ )
 	{
+	  std::list<VisionObject> results;
+	  results.clear();
+
 	  ImageProcessing::SegmentColours( frame, outFrame,
 					   50,5,10,
 					   subSample,
 					   colours[i], 
-					   marks[i] );
+					   marks[i],
+					   results );
+	  DBG("Segmentation found %d results", results.size() );
+	  for( std::list<VisionObject>::iterator i = results.begin();
+	       i != results.end();
+	       ++i)
+	    {
+	      DBG("Found %s size %d at %d,%d\n", (*i).type.c_str(), (*i).size, (*i).x, (*i).y );
+	      if ( server.conf.serial != 0 )
+		{
+		  std::ostringstream o;
+		  VisionObject vo = (*i);
+		  o << vo;
+		  DBG("Serial output: %s\n", o.str().c_str() );
+		  server.conf.serial->write(o.str().c_str() );
+		}
+	    }
 	}
     }
 
@@ -245,33 +266,15 @@ VideoStream::~VideoStream()
   // TODO Auto-generated destructor stub
 }
 
-#if 0
-int 
-VideoStream::input_cmd(in_cmd_type cmd, int value)
-{
-  int res = 0;
-  
-  fprintf(stderr, "input_cmd:%d, %d", cmd, value);
-  
-  pthread_mutex_lock(&controls_mutex);
-  
-  switch(cmd) {
-  default:
-    res = -1;
-  }
-  
-  pthread_mutex_unlock(&controls_mutex);
-  
-  return res;
-}
-#endif
-
 int 
 VideoStream::sendImage(FrameBuffer * img)
 {
   if(HTTPD::ClientRequest == true)
     {
+
+#ifdef DEBUG
       std::cout << "Framebuffer type " << img->type() << std::endl;
+#endif
       if(img->type() == FrameBuffer::RGB24BE)
 	{
 	  //	  memcpy(img->buffer, img->buffer, img->frameSize);
@@ -311,6 +314,16 @@ VideoStream::server_thread(void * arg)
   return NULL;
 }
 
+  // Make sure that these match the ProcessType enum above.
+static char const * processTypeStrings[] = 
+  {
+    "raw",
+    "showcolours",
+    "segmentcolours",
+    "scanlines",
+    "segmentation"
+  };
+
 int
 VideoStream::CommandProcessingMode( VideoStream * video, char const * command, char * response, unsigned int respLength )
 {
@@ -325,31 +338,23 @@ VideoStream::CommandProcessingMode( VideoStream * video, char const * command, c
       if ( ( s = strstr(s, "mode=") ) != NULL ) 
 	{
 	  s = s + strlen("mode=");
-	  if ( ! strncmp("raw",s, strlen("raw") ) )
+	  if ( ! strncmp("query",s,strlen("query") ) )
+	    {
+	      ret = COMMAND_ERR_OK;
+	    }
+	  else if ( ! strncmp("raw",s, strlen("raw") ) )
 	    {
 	      video->SetMode(Raw);
-	      
-	      strncpy(response, "processingmode: raw", respLength - 1);
-	      response[respLength-1] = '\0';
-
 	      ret = COMMAND_ERR_OK;
 	    }
 	  else if ( ! strncmp("showcolours", s, strlen("showcolours") ) )
 	    {
 	      video->SetMode(ShowColours);
-
-	      strncpy(response, "processingmode: showcolours", respLength - 1);
-	      response[respLength-1] = '\0';
-
 	      ret = COMMAND_ERR_OK;
 	    }
 	  else if ( ! strncmp("segmentcolours", s, strlen("segmentcolours") ) )
 	    {
 	      video->SetMode(SegmentColours);
-	      
-	      strncpy(response, "processingmode: segmentcolours", respLength - 1 );
-	      response[respLength-1] = '\0';
-
 	      ret = COMMAND_ERR_OK;
 	    }
 	  else
@@ -358,6 +363,19 @@ VideoStream::CommandProcessingMode( VideoStream * video, char const * command, c
 	      response[respLength - 1] = '\0';
 	      ret = COMMAND_ERR_PARAMETER;
 	    }
+	}
+
+      if ( ret == COMMAND_ERR_OK ) 
+	{
+	  unsigned int m = static_cast<unsigned int>( video->GetMode() );
+	  char const * ms;
+
+	  if ( ( m >= 0 ) && ( m < ( sizeof(processTypeStrings)/sizeof(processTypeStrings[0] ) ) ) )
+	    {
+	      ms = processTypeStrings[m];
+	    }
+	  snprintf(response, respLength - 1, "processingmode=%s", ms );
+	  response[respLength-1] = '\0';
 	}
     }
   return ret;
@@ -433,6 +451,152 @@ VideoStream::CommandUpdateColour( VideoStream * video, char const * command, cha
   return ret;
 }
 
+char const * VideoControlStrings[] = 
+  {
+    "illegal control",
+    "brightness",
+    "hue",
+    "saturation",
+    "contrast",
+    "sharpness"
+  };
+
+
+/* Assume all legal values are positive. -1 specifices the default value */
+int
+VideoStream::CommandVideoControl( VideoStream * video, char const * command, char * response, unsigned int respLength )
+{
+  int ret = COMMAND_ERR_COMMAND;
+  char const * s;
+  enum VideoControl vcontrol = IllegalControl;
+  int val = -2;
+  char const * control;
+
+  response[0] = '\0';
+
+  if ( ( s = strstr(command, "command=videocontrol") ) != NULL )
+    {
+      if ( ( s = strstr(s, "control=") ) != NULL ) 
+	{
+	  s = s + strlen("control=");
+	  control = 0;
+	  for(unsigned int i = 0; i < sizeof(VideoControlStrings)/sizeof(VideoControlStrings[0] ); ++i )
+	    {
+	      if ( ! strncmp(VideoControlStrings[i],s,strlen(VideoControlStrings[i]) ) )
+		{
+		  control = VideoControlStrings[i];
+		  vcontrol = static_cast<enum VideoControl>( i );
+		  s = s + strlen(control);
+		  break;
+		}
+	    }
+	  
+	  if ( control != 0 )
+	    {
+	      if ( ( s = strstr(s, "value=") ) != NULL )
+		{
+		  s = s + strlen("value=");
+		  if ( ! strncmp("query", s, strlen("query" ) ) )
+		    {
+		      val = -2;
+		      ret = COMMAND_ERR_OK;
+		    }
+		  else if ( sscanf(s, "%d", & val ) != 1 )
+		    {
+		      ret = COMMAND_ERR_PARAMETER;
+		      val = -2;
+		    }
+		}
+	      
+	      if ( val >= -1 ) 
+		{
+		  int err;
+		  switch( vcontrol )
+		    {
+		    case Brightness:
+		      err = video->device->SetBrightness( val );
+		      if ( err >= 0 )
+			{
+			  ret = COMMAND_ERR_OK;
+			}
+		      break;
+		    case Contrast:
+		      err = video->device->SetContrast( val );
+		      if ( err >= 0 )
+			{
+			  ret = COMMAND_ERR_OK;
+			}
+		      break;
+		    case Saturation:
+		      err = video->device->SetSaturation( val );
+		      if ( err >= 0 )
+			{
+			  ret = COMMAND_ERR_OK;
+			}
+		      break;
+		    case Sharpness:
+		      err = video->device->SetSharpness( val );
+		      if ( err >= 0 )
+			{
+			  ret = COMMAND_ERR_OK;
+			}
+		      break;
+		    default:
+		      ret = COMMAND_ERR_COMMAND;
+		      break;
+		    }
+		}
+	      
+	      if ( ret == COMMAND_ERR_OK )
+		{
+		  int v;
+
+		  switch( vcontrol )
+		    {
+		    case Brightness:
+		      v = video->device->GetBrightness( );
+		      if ( v < 0 )
+			{
+			  ret = COMMAND_ERR_COMMAND;
+			}
+		      break;
+		    case Contrast:
+		      v = video->device->GetContrast( );
+		      if ( v < 0 )
+			{
+			  ret = COMMAND_ERR_COMMAND;
+			}
+		      break;
+		    case Saturation:
+		      v = video->device->GetSaturation( );
+		      if ( v < 0 )
+			{
+			  ret = COMMAND_ERR_COMMAND;
+			}
+		      break;
+		    case Sharpness:
+		      v = video->device->GetSharpness( );
+		      if ( v < 0 )
+			{
+			  ret = COMMAND_ERR_COMMAND;
+			}
+		      break;
+		    default:
+		      ret = COMMAND_ERR_COMMAND;
+		      break;
+		    }
+
+		  if ( v >= 0 )
+		    {
+		      snprintf(response, respLength - 1, "control=%s&value=%d", control, v );
+		    }
+		}
+	    }
+	}
+    }
+  return ret;
+}
+
 enum VideoStream::ProcessType
 VideoStream::GetMode( void ) const
 {
@@ -460,3 +624,4 @@ VideoStream::UpdateColour( ColourDefinition const col )
 	}
     }
 }
+

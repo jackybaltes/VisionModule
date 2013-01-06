@@ -47,3 +47,51 @@ VideoDevice::isRunning( void ) const
 {
   return running;
 }
+
+int 
+VideoDevice::GetBrightness( void )
+{
+  return -1;
+}
+
+int 
+VideoDevice::SetBrightness( unsigned int val )
+{
+  return -1;
+}
+
+int 
+VideoDevice::GetContrast( void )
+{
+  return -1;
+}
+
+int 
+VideoDevice::SetContrast( unsigned int val )
+{
+  return -1;
+}
+
+int 
+VideoDevice::GetSaturation( void )
+{
+  return -1;
+}
+
+int 
+VideoDevice::SetSaturation( unsigned int val )
+{
+  return -1;
+}
+
+int 
+VideoDevice::GetSharpness( void )
+{
+  return -1;
+}
+
+int 
+VideoDevice::SetSharpness( unsigned int val )
+{
+  return -1;
+}

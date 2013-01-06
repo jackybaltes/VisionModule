@@ -52,9 +52,19 @@ public:
   void nextFrame( FrameBuffer * * curFrame );
   int releaseCurrentBuffer( void );
   bool isInterlaced( void );
-  int  setControl(struct v4l2_control vc);
+  int  setControl(struct v4l2_control * vc);
   int queryControl(struct v4l2_queryctrl * qc);
   int getControl(struct v4l2_control * vc);
+
+ public:
+  virtual int GetBrightness( void );
+  virtual int SetBrightness( unsigned int val );
+  virtual int GetContrast( void );
+  virtual int SetContrast( unsigned int val );
+  virtual int GetSaturation( void );
+  virtual int SetSaturation( unsigned int val );
+  virtual int GetSharpness( void );
+  virtual int SetSharpness( unsigned int val );
 
   static unsigned int const XNUM_BUFFERS;
 

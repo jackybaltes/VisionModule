@@ -5,10 +5,13 @@
 #ifndef _IMAGEPROCESSING_H_
 #define _IMAGEPROCESSING_H_
 
+#include <list>
+
 #include "pixel.h"
 #include "point.h"
 #include "colourdefinition.h"
 #include "rect.h"
+#include "visionobject.h"
 
 class FloodFillState;
 class FrameBuffer;
@@ -26,7 +29,7 @@ class ImageProcessing {
   };
 
   static void segmentScanLines( FrameBuffer const * frame, FrameBuffer * outFrame, unsigned int threshold, unsigned int minLength, unsigned int maxLength, unsigned int minSize, RawPixel const & mark, unsigned int subsample, ColourDefinition const * target );
-  static void SegmentColours( FrameBuffer const * frame, FrameBuffer * outFrame, unsigned int threshold, unsigned int minLength, unsigned int minSize, unsigned int subSample, ColourDefinition const & target, RawPixel const & mark );
+  static void SegmentColours( FrameBuffer const * frame, FrameBuffer * outFrame, unsigned int threshold, unsigned int minLength, unsigned int minSize, unsigned int subSample, ColourDefinition const & target, RawPixel const & mark, std::list<VisionObject> & results );
 
   static void medianFilter( FrameBuffer const * frame, FrameBuffer * outFrame, unsigned int subSample = 1 );
 
