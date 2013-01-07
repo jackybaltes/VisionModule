@@ -87,7 +87,7 @@ Configuration</a></li>
 <div id="colourdefinition">
 <p> Create and modify colour definitions.</p>
 
-<select id="colourNameSelector" name="colourname" onchange="onchangeColourDefinition()">
+<select id="colourNameSelector" name="colourname" onchange="OnChangeSelectedColour(this)">
 <option value="white"> white </option>
 <option value="black"> black </option>
 <option value="grey"> grey </option>
@@ -125,17 +125,17 @@ Min</th>
 
     <tr>
 
-      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redmin" id="redminButton" min="0" max="255" step="1" value="255" onchange="onchangeColourDefinition()"></td>
+      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redmin" id="redminButton" min="0" max="255" step="1" value="255" onchange="OnChangeColourDefinition()"></td>
 
-      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="greenmin" id="greenminButton" min="0" max="255" step="1" value="255" onchange="onchangeColourDefinition()"></td>
+      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="greenmin" id="greenminButton" min="0" max="255" step="1" value="255" onchange="OnChangeColourDefinition()"></td>
 
-      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="bluemin" id="blueminButton" min="0" max="255" step="1" value="255" onchange="onchangeColourDefinition()"></td>
+      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="bluemin" id="blueminButton" min="0" max="255" step="1" value="255" onchange="OnChangeColourDefinition()"></td>
 
-      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redgreenmin" id="redgreenminButton" min="-255" max="255" step="1" value="255" onchange="onchangeColourDefinition()"></td>
+      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redgreenmin" id="redgreenminButton" min="-255" max="255" step="1" value="255" onchange="OnChangeColourDefinition()"></td>
 
-      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redbluemin" id="redblueminButton" min="-255" max="255" step="1" value="255" onchange="onchangeColourDefinition()"></td>
+      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redbluemin" id="redblueminButton" min="-255" max="255" step="1" value="255" onchange="OnChangeColourDefinition()"></td>
 
-      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="greenbluemin" id="greenblueminButton" min="-255" max="255" step="1" value="255" onchange="onchangeColourDefinition()"></td>
+      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="greenbluemin" id="greenblueminButton" min="-255" max="255" step="1" value="255" onchange="OnChangeColourDefinition()"></td>
 
     </tr>
 
@@ -163,17 +163,17 @@ Max</th>
 
     <tr>
 
-      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redmax" id="redmaxButton" min="0" max="255" step="1" value="0" onchange="onchangeColourDefinition()"></td>
+      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redmax" id="redmaxButton" min="0" max="255" step="1" value="0" onchange="OnChangeColourDefinition()"></td>
 
-      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="greenmax" id="greenmaxButton" min="0" max="255" step="1" value="0" onchange="onchangeColourDefinition()"></td>
+      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="greenmax" id="greenmaxButton" min="0" max="255" step="1" value="0" onchange="OnChangeColourDefinition()"></td>
 
-      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="bluemax" id="bluemaxButton" min="0" max="255" step="1" value="0" onchange="onchangeColourDefinition()"></td>
+      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="bluemax" id="bluemaxButton" min="0" max="255" step="1" value="0" onchange="OnChangeColourDefinition()"></td>
 
-      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redgreenmax" id="redgreenmaxButton" min="-255" max="255" step="1" value="-255" onchange="onchangeColourDefinition()"></td>
+      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redgreenmax" id="redgreenmaxButton" min="-255" max="255" step="1" value="-255" onchange="OnChangeColourDefinition()"></td>
 
-      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redbluemax" id="redbluemaxButton" min="-255" max="255" step="1" value="-255" onchange="onchangeColourDefinition()"></td>
+      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="redbluemax" id="redbluemaxButton" min="-255" max="255" step="1" value="-255" onchange="OnChangeColourDefinition()"></td>
 
-      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="greenbluemax" id="greenbluemaxButton" min="-255" max="255" step="1" value="-255" onchange="onchangeColourDefinition()"></td>
+      <td style="width: 80px;" class="tcentry"><input maxlength="4" size="4" name="greenbluemax" id="greenbluemaxButton" min="-255" max="255" step="1" value="-255" onchange="OnChangeColourDefinition()"></td>
 
     </tr>
 

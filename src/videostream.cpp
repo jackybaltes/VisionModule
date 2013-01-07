@@ -139,13 +139,13 @@ VideoStream::run( )
 
   colours.clear();
 
-  colours.push_back( ColourDefinition("Red", 
+  colours.push_back( ColourDefinition("red", 
 				      Pixel(60,60,60,-50,60,128,0,0,0),
 				      Pixel(255,255,128,0,180,180,255,255,255)) );
-  colours.push_back( ColourDefinition( "Green",
+  colours.push_back( ColourDefinition( "green",
 				       Pixel(0,100,0,-255,-255,-255,0,0,0),
 				       Pixel(128,255,128,0,255,0,255,255,255) ) );
-  colours.push_back( ColourDefinition( "Blue",
+  colours.push_back( ColourDefinition( "blue",
 				       Pixel(0,0,100,-255,-255,-255,0,0,0),
 				       Pixel(255,255,255,255,0,0,255,255,255) ) );
   

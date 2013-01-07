@@ -7,6 +7,7 @@ var green = { "name":"green", "value":"green", "red_min":255 };
 var blue = { "name":"blue", "value":"blue", "red_min":255 };
 var cyan = { "name":"cyan", "value":"cyan", "red_min":255 };
 var magenta = { "name":"magenta", "value":"magenta", "red_min":255 };
+var resetColour;
 
 var colours = new Array( red, green, blue, cyan, magenta );
 
@@ -114,9 +115,11 @@ function AJAX_response(text) {
     console.log("|%s|",text.substring(0,32));
     if ( text.substring(0,15) == "processingmode=") {
 	ResponseProcessingMode( text.substring(15) );
+    } else if ( text.substring(0,7) == "colour=" ) {
+	ResponseColour(text.substring(7));
     } else if ( text.substring(0,8) == "control=" ) {
 	ResponseControl(text.substring(8));
-    }
+    } 
 }
 
 function KeyDown(ev) {
@@ -207,29 +210,42 @@ function InitCanvas() {
 }
 
 function onclickResetColour() {
-    document.getElementById("redminButton").value = 255;
-    document.getElementById("greenminButton").value = 255;
-    document.getElementById("blueminButton").value = 255;
-
-    document.getElementById("redmaxButton").value = 0;
-    document.getElementById("greenmaxButton").value = 0;
-    document.getElementById("bluemaxButton").value = 0;
-
-    document.getElementById("redgreenminButton").value = 255;
-    document.getElementById("redblueminButton").value = 255;
-    document.getElementById("greenblueminButton").value = 255;
-
-    document.getElementById("redgreenmaxButton").value = -255;
-    document.getElementById("redbluemaxButton").value = -255;
-    document.getElementById("greenbluemaxButton").value = -255;
-
-    onchangeColourDefinition();
+    UpdateColourParameters( resetColour );
 }
 
-function onchangeColourDefinition( ) {
-    console.log("Sendign new colour definition");
+function UpdateColourParameters( col ) {
+    document.getElementById("redminButton").value = col.red_min;
+    document.getElementById("greenminButton").value = col.green_min;
+    document.getElementById("blueminButton").value = col.blue_min;
+
+    document.getElementById("redmaxButton").value = col.red_max;
+    document.getElementById("greenmaxButton").value = col.green_max;
+    document.getElementById("bluemaxButton").value = col.blue_max;
+
+    document.getElementById("redgreenminButton").value = col.redgreen_min;
+    document.getElementById("redblueminButton").value = col.redblue_min;
+    document.getElementById("greenblueminButton").value = col.greenblue_min;
+
+    document.getElementById("redgreenmaxButton").value = col.redgreen_max;
+    document.getElementById("redbluemaxButton").value = col.redblue_max;
+    document.getElementById("greenbluemaxButton").value = col.greenblue_max;
+
+    // document.getElementById("redratiominButton").value = col.redratio_min;
+    // document.getElementById("greenratiominButton").value = col.greenratio_min;
+    // document.getElementById("blueratiominButton").value = col.blueratio_min;
+
+    // document.getElementById("redratiomaxButton").value = col.redratio_max;
+    // document.getElementById("greenratiomaxButton").value = col.greenratio_max;
+    // document.getElementById("blueratiomaxButton").value = col.blueratio_max;
+
+    OnChangeColourDefinition();
+}
+
+function OnChangeColourDefinition( ) {
+    console.log("Sending new colour definition");
     SendCommand("updatecolour" + "&" + "{" +
-		document.getElementById("colourName").value + "&" + 
+		document.getElementById("colourNameSelector").value + "&" + 
+
 		document.getElementById("redminButton").value + "&" +
 		document.getElementById("greenminButton").value + "&" + 
 		document.getElementById("blueminButton").value + "&" +
@@ -246,6 +262,7 @@ function onchangeColourDefinition( ) {
 		document.getElementById("redbluemaxButton").value + "&" + 
 		document.getElementById("greenbluemaxButton").value + "&" + 
 
+// Need to replace with ratio input parameter holders
 		0 + "&" + 
 		0 + "&" + 
 		0 + "&" + 
@@ -254,6 +271,11 @@ function onchangeColourDefinition( ) {
 		255 + "&" + 
 		255 + "}"
 	       );
+}
+
+function OnChangeSelectedColour( sel ) {
+    var c = sel.value;
+ 
 }
 
 function onmouseupVideo( event ) {
@@ -299,6 +321,8 @@ function InitVisionModule() {
     video.addEventListener('mouseout',onmouseupVideo, false);
 
     mouseDown = false;
+
+    resetColour = ArrayToColour(["reset","reset","255","255","255","0","0","0","255","255","255","-255","-255","-255","255","255","255","0","0","0"]);
 
     SendCommand("processingmode" + "&" + "mode=query");
     
@@ -435,7 +459,7 @@ function AddPixelToColourDefinition( pix ) {
 	}
 	console.log("Changed = " + changed );
 	if ( changed ) {
-	    onchangeColourDefinition();
+	    OnChangeColourDefinition();
 	}
     }
 }
@@ -469,6 +493,59 @@ function ResponseControl( text ) {
     }
     var ctrl = document.getElementById(control + "Button");
     ctrl.value = parseInt(value,10);
+}
+
+function ResponseColour( text ) {
+    var col = TextToColour( text );
+    UpdateColour( col );
+}
+
+function ArrayToColour( t ) {
+    var col;
+
+    if ( t.length == 20 ) {
+	col = {};
+
+	col.name = t[0];
+	col.value = t[1];
+
+	col.red_min = parseInt( t[2] );
+	col.green_min = parseInt( t[3] );
+	col.blue_min = parseInt( t[4] );
+
+	col.red_max = parseInt( t[5] );
+	col.green_max = parseInt( t[6] );
+	col.blue_max = parseInt( t[7] );
+
+	col.redgreen_min = parseInt( t[8] );
+	col.redblue_min = parseInt( t[9] );
+	col.greenblue_min = parseInt( t[10] );
+
+	col.redgreen_max = parseInt( t[11] );
+	col.redblue_max = parseInt( t[12] );
+	col.greenblue_max = parseInt( t[13] );
+
+	col.redratio_min = parseInt( t[14] );
+	col.greenratio_min = parseInt( t[15] );
+	col.blueratio_min = parseInt( t[16] );
+
+	col.redratio_max = parseInt( t[17] );
+	col.greenratio_max = parseInt( t[18] );
+	col.blueratio_max = parseInt( t[19] );	
+    }
+    return col;
+}
+
+function TextToColour( text ) {
+    var s;
+    var col;
+
+    var t = text.split("&");
+
+    if ( t.length == 20 ) {
+	col = ArrayToColour( t );
+    }
+    return col;
 }
 
 function OnChangeVideoControl( ctrl ) {
