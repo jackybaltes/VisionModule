@@ -1,11 +1,21 @@
-var xmlHttp;
+// Javascript functions for the VisionModule
+// Jacky Baltes <jacky@cs.umanitoba.ca> Sun Jan  6 21:19:09 CST 2013
+//
 
-function stateCallback() {
+var red = { "name":"red", "value":"red", "red_min":255 };
+var green = { "name":"green", "value":"green", "red_min":255 };
+var blue = { "name":"blue", "value":"blue", "red_min":255 };
+var cyan = { "name":"cyan", "value":"cyan", "red_min":255 };
+var magenta = { "name":"magenta", "value":"magenta", "red_min":255 };
+
+var colours = new Array( red, green, blue, cyan, magenta );
+
+function AJAX_stateCallback( req ) {
   var stat, rstate;
-  if( !xmlHttp ) return;
+  if( ! req ) return;
 
   try {
-    rstate = xmlHttp.readyState;
+    rstate = req.readyState;
   } catch (err) {
     alert(err);
   }
@@ -25,77 +35,78 @@ function stateCallback() {
   case 4:
       // check http status
       try {
-          stat = xmlHttp.status;
+          stat = req.status;
       }
       catch (err) {
-        stat = "xmlHttp.status does not exist";
+        stat = "req.status does not exist";
       }
       if( stat == 200 ) {   // success
-          AJAX_response(xmlHttp.responseText);
+          AJAX_response(req.responseText);
       }
       // loading not successfull, e.g. page not available
-      else { }
-  }
-}
-
-function init_AJAX() 
-{
-  var new_xmlHttp;
-
-  try
-  {
-    // Internet Explorer
-    if( window.ActiveXObject )
-    {
-      for( var i = 5; i; i-- )
-      {
-        try
-        {
-          // loading of a newer version of msxml dll (msxml3 - msxml5) failed
-          // use fallback solution
-          // old style msxml version independent, deprecated
-          if( i == 2 ) {
-            new_xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");
-          }
-          // try to use the latest msxml dll
-          else {
-            new_xmlHttp = new ActiveXObject( "Msxml2.XMLHTTP." + i + ".0" );
-          }
-          break;
-        }
-        catch( excNotLoadable ) {
-          new_xmlHttp = false;
-        }
+      else { 
       }
-    }
-    // Mozilla, Opera und Safari
-    else if( window.XMLHttpRequest ) {
-      new_xmlHttp = new XMLHttpRequest();
-    }
   }
-  catch( excNotLoadable ) {
-    new_xmlHttp = false;
-  }
-
-  new_xmlHttp.onreadystatechange = stateCallback;
-
-  xmlHttp = new_xmlHttp;
 }
 
-function AJAX_get(url) {
-  if( xmlHttp ) {
-    xmlHttp.abort();
-    xmlHttp = false;
-  }
+function AJAX_init() {
+    var new_xmlHttp = null;
+    
+    try
+    {
+	// Internet Explorer
+	if( window.ActiveXObject )
+	{
+	    for( var i = 5; i; i-- )
+	    {
+		try
+		{
+		    // loading of a newer version of msxml dll (msxml3 - msxml5) failed
+		    // use fallback solution
+		    // old style msxml version independent, deprecated
+		    if( i == 2 ) {
+			new_xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");
+		    }
+		    // try to use the latest msxml dll
+		    else {
+			new_xmlHttp = new ActiveXObject( "Msxml2.XMLHTTP." + i + ".0" );
+		    }
+		    break;
+		}
+		catch( excNotLoadable ) {
+		    new_xmlHttp = false;
+		}
+	    }
+	}
+	// Mozilla, Opera und Safari
+	else if( window.XMLHttpRequest ) {
+	    new_xmlHttp = new XMLHttpRequest();
+	}
+    }
+    catch( excNotLoadable ) {
+	new_xmlHttp = null;
+    }
+ 
+    if (new_xmlHttp != null ) {
+	new_xmlHttp.onreadystatechange = function() {
+	    AJAX_stateCallback( new_xmlHttp );
+	}
+    }
+    return new_xmlHttp;
+}
 
-  init_AJAX();
-  xmlHttp.open("GET", url, true);
-  xmlHttp.send(null);
+function AJAX_get(req,url) {
+    req.open("GET", url, true);
+    req.send(null);
 }
 
 function SendCommand(cmd) {
     document.getElementById('hints').firstChild.nodeValue = "Send command: " + cmd;
-    AJAX_get('/?action=command&command='+ cmd)
+    req = AJAX_init();
+    if ( req != null )
+    {
+	AJAX_get(req, '/?action=command&command='+ cmd);
+    }
 }
 
 function AJAX_response(text) {
@@ -156,12 +167,10 @@ function CreateImageLayer() {
     img.style.zIndex = 0;
     img.onload = imageOnload;
     img.src = "/?action=snapshot&n=" + (++imageNr);
-//    var ctx=document.getElementById("videocanvas").getContext("2d");    
     ctx.drawImage(img, 0,0);
 }
 
 function imageOnload() {
-//    var ctx=document.getElementById("videocanvas").getContext("2d");    
     ctx.drawImage(this, 0,0);
     if (!paused) CreateImageLayer();
 }
@@ -293,7 +302,43 @@ function InitVisionModule() {
 
     SendCommand("processingmode" + "&" + "mode=query");
     
+    SendCommand("videocontrol" + "&" + "control=" + "brightness" + "&" + "value=" + "query");
+
+    SendCommand("videocontrol" + "&" + "control=" + "contrast" + "&" + "value=" + "query");
+
+    SendCommand("videocontrol" + "&" + "control=" + "saturation" + "&" + "value=" + "query");
+
+    SendCommand("videocontrol" + "&" + "control=" + "sharpness" + "&" + "value=" + "query");
+
+    UpdateColourSelection();
+
     CreateImageLayer();
+}
+
+function RemoveChildren( id ) {
+    var sel = document.getElementById( id );
+    var n = sel.firstChild;
+    while ( n ) {
+	var n2 = n.nextSibling;
+	sel.removeChild(n);
+	n = n2;
+    }
+}
+
+function AddArrayToSelection(id, arr ) {
+    var sel = document.getElementById( id );
+
+    for(var i=0, len=arr.length; i < len; i++) {
+	var c = arr[i];
+	var e = new Option( c.name, c.value );
+
+	sel.appendChild(e);
+    }    
+}
+
+function UpdateColourSelection() {
+    RemoveChildren( "colourNameSelector" );
+    AddArrayToSelection( "colourNameSelector", colours );
 }
 
 function AddPixelToColourDefinition( pix ) {

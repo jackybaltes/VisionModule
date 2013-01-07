@@ -87,7 +87,15 @@ Configuration</a></li>
 <div id="colourdefinition">
 <p> Create and modify colour definitions.</p>
 
-<input onchange="onchangeColourDefinition()" value="Red" name="colourname" id="colourName" list="colours"><button onclick="addColour()" value="Add Colour" name="addcolour" type="button">Add Colour </button><button onclick="delColour()" value="Delete Colour" name="delcolour" type="button">Delete Colour </button><br>
+<select id="colourNameSelector" name="colourname" onchange="onchangeColourDefinition()">
+<option value="white"> white </option>
+<option value="black"> black </option>
+<option value="grey"> grey </option>
+</select>
+
+<button onclick="addColour()" value="Add Colour" name="addcolour" type="button">Add Colour </button>
+
+<button onclick="delColour()" value="Delete Colour" name="delcolour" type="button">Delete Colour </button><br>
 
 <table style="text-align: center; width: 600px;" display="none" border="1" cellpadding="1" cellspacing="1">
 
