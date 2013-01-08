@@ -112,7 +112,7 @@ function SendCommand(cmd) {
 
 function AJAX_response(text) {
     document.getElementById('hints').firstChild.nodeValue = "Got response: " + text;
-    console.log("|%s|",text.substring(0,32));
+    console.log("|%s|",text.substring(0,72));
     if ( text.substring(0,15) == "processingmode=") {
 	ResponseProcessingMode( text.substring(15) );
     } else if ( text.substring(0,7) == "colour=" ) {
@@ -275,7 +275,7 @@ function OnChangeColourDefinition( ) {
 
 function OnChangeSelectedColour( sel ) {
     var c = sel.value;
- 
+    SendCommand("querycolour" + "&" + "colour=" + c);
 }
 
 function onmouseupVideo( event ) {
@@ -363,6 +363,12 @@ function AddArrayToSelection(id, arr ) {
 function UpdateColourSelection() {
     RemoveChildren( "colourNameSelector" );
     AddArrayToSelection( "colourNameSelector", colours );
+    UpdateCurrentColourParameters( );
+}
+
+function UpdateCurrentColourParameters() {
+    var sel = document.getElementById( "colourNameSelector" );
+    OnChangeSelectedColour( sel );
 }
 
 function AddPixelToColourDefinition( pix ) {
@@ -497,7 +503,7 @@ function ResponseControl( text ) {
 
 function ResponseColour( text ) {
     var col = TextToColour( text );
-    UpdateColour( col );
+    UpdateColourParameters( col );
 }
 
 function ArrayToColour( t ) {
@@ -539,6 +545,10 @@ function ArrayToColour( t ) {
 function TextToColour( text ) {
     var s;
     var col;
+
+    if ( ( text[0] == "{" ) && ( text[text.length-1] == "}" ) ) {
+	text = text.substring(1,text.length-1);
+    }
 
     var t = text.split("&");
 

@@ -91,6 +91,7 @@ public:
 
   static int CommandProcessingMode( VideoStream * video, char const * command, char * response, unsigned int respLength );
   static int CommandUpdateColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
+  static int CommandQueryColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
   static int CommandVideoControl( VideoStream * video, char const * command, char * response, unsigned int respLength );
 
  private:
@@ -110,6 +111,7 @@ public:
 
  private:
   void UpdateColour(ColourDefinition const colour );
+  ColourDefinition * GetColour( std::string const & name );
 
  public:
   enum ProcessType GetMode( void ) const;

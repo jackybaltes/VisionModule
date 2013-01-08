@@ -484,10 +484,9 @@ HTTPD::ParseCommand(int fd, char const * parameter)
   char tmpCommand[256];
   char tmp[256];
   char const * pcommand;
-  char response[32];
+  char response[1024];
 
   char buffer[BUFFER_SIZE] = {0};
-  char ret_s[10] = {0};
 
   /* sanity check of parameter-string */
   if ( parameter == NULL || strlen(parameter) >= 256 || strlen(parameter) == 0 ) {

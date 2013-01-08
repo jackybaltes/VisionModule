@@ -54,6 +54,7 @@ struct Command const VideoStream::Commands[] =
     VideoStream::CommandProcessingMode, 
     VideoStream::CommandUpdateColour, 
     VideoStream::CommandVideoControl,
+    VideoStream::CommandQueryColour,
     
     { NULL }
   };
@@ -451,6 +452,80 @@ VideoStream::CommandUpdateColour( VideoStream * video, char const * command, cha
   return ret;
 }
 
+int
+VideoStream::CommandQueryColour( VideoStream * video, char const * command, char * response, unsigned int respLength )
+{
+  int ret = COMMAND_ERR_COMMAND;
+  char const * s;
+  char const * start;
+  size_t len;
+
+  std::string name;
+
+  response[0] = '\0';
+
+  if ( ( s = strstr(command, "command=querycolour") ) != NULL )
+    {
+      s = s + strlen("command=querycolour");
+
+      if ( ( s = strstr(s,"colour=") ) != NULL ) 
+	{
+	  s = s + strlen("colour=");
+	  start = s;
+	  len = 0;
+	  while( ( *s != '\0') && ( *s != '&' ) )
+	    {
+	      s++;
+	      len++;
+	    }
+	  
+	  std::string name( start, len );
+
+	  ColourDefinition * col = video->GetColour( name );
+	  if ( col != 0 )
+	    {
+	      snprintf(response,respLength-1, "colour={%s&%s&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d}",
+		       col->name.c_str(),
+		       col->name.c_str(),
+
+		       col->min.red,
+		       col->min.green,
+		       col->min.blue,
+
+		       col->max.red,
+		       col->max.green,
+		       col->max.blue,
+
+		       col->min.red_green,
+		       col->min.red_blue,
+		       col->min.green_blue,
+
+		       col->max.red_green,
+		       col->max.red_blue,
+		       col->max.green_blue,
+
+		       col->min.red_ratio,
+		       col->min.green_ratio,
+		       col->min.blue_ratio,
+
+		       col->max.red_ratio,
+		       col->max.green_ratio,
+		       col->max.blue_ratio
+		       );
+	      response[respLength-1] = '\0';
+	      ret = COMMAND_ERR_OK;
+	    }
+	  else
+	    {
+	      strncpy(response,"colour UNKNOWN", respLength - 1 );
+	      response[respLength-1] = '\0';
+	      ret = COMMAND_ERR_PARAMETER;
+	    }
+	}
+    }
+  return ret;
+}
+
 char const * VideoControlStrings[] = 
   {
     "illegal control",
@@ -623,5 +698,21 @@ VideoStream::UpdateColour( ColourDefinition const col )
 	  break;
 	}
     }
+}
+
+ColourDefinition *
+VideoStream::GetColour( std::string const & name ) 
+{
+  ColourDefinition * col = 0;
+  for( vector<ColourDefinition>::iterator i = colours.begin();
+       i != colours.end();
+       ++i)
+    {
+      if ( (*i).name == name )
+	{
+	  return & (*i);
+	}
+    }
+  return col;
 }
 
