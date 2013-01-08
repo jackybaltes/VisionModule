@@ -60,12 +60,27 @@ main( int argc, char ** argv )
       
       po::options_description generalOptions("General Options");
       generalOptions.add_options()
+	("subsample", po::value<unsigned int>( & subSample )->default_value(1),"sub sample")
+	;
+
+      int brightness;
+      int contrast;
+      int saturation;
+      int sharpness;
+      int gain;
+
+      po::options_description cameraOptions("Camera Options");
+      cameraOptions.add_options()
 	("driver,u", po::value<string>(& driver)->default_value("v4l2"), "driver type [v4l2,v4l,bayer,file]")
 	("video_device,d", po::value<string>(& device_video)->default_value("/dev/video0"), "video device name")
 	("width,w", po::value<unsigned int>( & width )->default_value(320),"width")
 	("height,h", po::value<unsigned int>( & height )->default_value(240),"height")
 	("depth", po::value<unsigned int>( & depth )->default_value(24),"depth")
-	("subsample", po::value<unsigned int>( & subSample )->default_value(1),"sub sample")
+	("brightness", po::value<int> ( & brightness )->default_value(-1),"brightness")
+	("contrast", po::value<int> ( & contrast )->default_value(-1),"contrast")
+	("saturation", po::value<int> ( & saturation )->default_value(-1),"saturation")
+	("sharpness", po::value<int> ( & sharpness )->default_value(-1),"sharpness")
+	("gain", po::value<int> ( & gain )->default_value(-1),"gain")
 	;
 
       po::options_description httpOptions("Http Server Options");
@@ -73,22 +88,31 @@ main( int argc, char ** argv )
 	("http-port", po::value<unsigned int>( & http_port )->default_value(8080)->required(),"http port number")
 	("http-addr", po::value<string>(& http_addr)->default_value("0.0.0.0")->required(),"http address")
 	("docroot", po::value<string>(& docroot)->default_value("www/")->required(),"http document root")
-	("index", po::value<string>(& index)->default_value("index.html"),"index.html file name");
+	("index", po::value<string>(& index)->default_value("index.html"),"index.html file name")
+	;
         
+      std::vector<string> colours;
+
+      po::options_description colourOptions("General Options");
+      colourOptions.add_options()
+	("colour", po::value<vector<string> >( & colours),"colour definition")
+      ;
+
       po::options_description serialOptions("Serial Port Options");
       serialOptions.add_options()
 	("serial_device", po::value<string>( & device_serial )->default_value(""),"serial device name or empty for no serial port output")
 	("baudrate", po::value<string>(& baudrate)->default_value("115200"),"baudrate");
 
       po::options_description commandLineOptions;
-      commandLineOptions.add(commandLineOnlyOptions).add(generalOptions).add(httpOptions).add(serialOptions);
+      commandLineOptions.add(commandLineOnlyOptions).add(generalOptions).add(cameraOptions).add(httpOptions).add(colourOptions).add(serialOptions)
+	;
 
       po::variables_map vm;
       po::store(po::parse_command_line(argc,argv,commandLineOptions),vm);
       po::notify(vm);
 
       po::options_description configFileOptions;
-      configFileOptions.add(generalOptions).add(httpOptions).add(serialOptions);
+      configFileOptions.add(generalOptions).add(cameraOptions).add(httpOptions).add(colourOptions).add(serialOptions);
 
       ifstream ifs( config_file.c_str() );
       po::store(po::parse_config_file(ifs, configFileOptions), vm );
@@ -129,7 +153,7 @@ main( int argc, char ** argv )
       cout << "device " << device_video << ", driver " << driver << ", width " << width << ", height " << height << endl;
 #endif
 
-      VideoStream * video = new VideoStream( driver, device_video, input, standard, fps, width, height, depth, numBuffers, subSample );
+      VideoStream * video = new VideoStream( driver, device_video, input, standard, fps, width, height, depth, numBuffers, subSample, brightness, contrast, saturation, sharpness, gain );
 
       // TODO Auto-generated constructor stub
       VideoStream::global.buf = ( uint8_t *)malloc( width * height * depth/8 );
@@ -178,6 +202,8 @@ main( int argc, char ** argv )
 	      serial = 0;
 	    }
 	}
+
+
       video->server.pglobal = & VideoStream::global;
       video->server.conf.http_port = htons( http_port );
       video->server.conf.http_addr = http_addr.c_str();
@@ -189,6 +215,20 @@ main( int argc, char ** argv )
       video->server.conf.video = video;
       video->server.conf.serial = serial;
 
+      for(std::vector<string>::iterator it = colours.begin(); it != colours.end(); ++it) 
+	{
+	  ColourDefinition cd;
+	  std::stringstream is(*it);
+	  is >> cd;
+	  if ( is.fail() ) 
+	    {
+	      std::cerr << "Reading of colour failed:" << (*it) << std::endl;
+	    }
+
+#if defined(DEBUG)
+	  cout << "adding colour" << endl;
+#endif	  
+	}
 #if defined(DEBUG)
       cout << "Starting video thread" << endl;
 #endif
@@ -203,7 +243,7 @@ main( int argc, char ** argv )
 
       for(;;)
 	{
-	  sleep(100);
+	  sleep(1000);
 	}
     }
   catch( exception & e )

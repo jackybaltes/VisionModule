@@ -55,7 +55,12 @@ public:
 	      unsigned int height,
 	      unsigned int depth,
 	      unsigned int numBuffers,
-	      unsigned int subSample
+	      unsigned int subSample,
+	      int brightness,
+	      int contrast,
+	      int saturation,
+	      int sharpness,
+	      int gain
 	      );
 
   virtual ~VideoStream();
@@ -121,7 +126,6 @@ public:
 
  public:
   std::vector<ColourDefinition> colours;
-
  public:
   unsigned int subSample;
 };

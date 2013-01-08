@@ -69,7 +69,12 @@ VideoStream::VideoStream(string driver,
 			 unsigned int height,
 			 unsigned int depth,
 			 unsigned int numBuffers,
-			 unsigned int subSample
+			 unsigned int subSample,
+			 int brightness,
+			 int contrast,
+			 int saturation,
+			 int sharpness,
+			 int gain
 			 )
   : done( true ),
     mode( VideoStream::Raw ),
@@ -116,11 +121,17 @@ VideoStream::VideoStream(string driver,
       std::exit( EXIT_FAILURE );
     }
   
+  device->SetBrightness( brightness );
+  device->SetContrast( contrast );
+  device->SetSaturation( saturation );
+  device->SetSharpness( sharpness );
+  device->SetGain( gain );
+
   if ( gettimeofday( & prev, 0  ) != 0 )
     {
       std::cerr << "videostream gettimeofday failed\n";
       perror( "videoStream gettimeofday ");
-    }
+    }  
 }
 
 void
@@ -383,12 +394,12 @@ VideoStream::CommandProcessingMode( VideoStream * video, char const * command, c
   return ret;
 }
 
+#if 0
 int
 VideoStream::CommandUpdateColour( VideoStream * video, char const * command, char * response, unsigned int respLength )
 {
   int ret = COMMAND_ERR_COMMAND;
   char const * s;
-  enum ProcessType processMode;
 
   char name[256];
   unsigned int redmin;
@@ -437,6 +448,44 @@ VideoStream::CommandUpdateColour( VideoStream * video, char const * command, cha
 					  redgreenmax, redbluemax, greenbluemax,
 					  redratiomax, greenratiomax, blueratiomax ) 
 				   );
+	  video->UpdateColour( colour );
+
+	  strncpy(response,"colour OK", respLength - 1 );
+	  response[respLength-1] = '\0';
+	  ret = COMMAND_ERR_OK;
+	}
+      else
+	{
+	  strncpy(response,"colour BAD", respLength - 1 );
+	  response[respLength-1] = '\0';
+	  ret = COMMAND_ERR_PARAMETER;
+	}
+    }
+  return ret;
+}
+#endif
+
+int
+VideoStream::CommandUpdateColour( VideoStream * video, char const * command, char * response, unsigned int respLength )
+{
+  int ret = COMMAND_ERR_COMMAND;
+  char const * s;
+  ColourDefinition colour;
+  response[0] = '\0';
+
+  if ( ( s = strstr(command, "command=updatecolour") ) != NULL )
+    {
+      s = s + strlen("command=updatecolour");
+
+      std::string col(s);
+      std::stringstream is(col);
+      
+      is.ignore(1,'&');
+      is >> colour;
+      if ( ! is.fail() )
+	{
+	  DBG("update colour %s\n", name);
+
 	  video->UpdateColour( colour );
 
 	  strncpy(response,"colour OK", respLength - 1 );

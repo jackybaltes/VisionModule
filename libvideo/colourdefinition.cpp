@@ -1,6 +1,8 @@
 #include "colourdefinition.h"
 #include <iostream>
 #include <fstream>
+#include <locale>
+#include <vector>
 
 ColourDefinition::ColourDefinition() :
   name(""),
@@ -69,9 +71,11 @@ ColourDefinition::addPixel(const Pixel & p)
 {
   min.setMinimum(p);
   max.setMaximum(p);
+#if defined(DEBUG)
   std::cout << "Min: " << min << std::endl;
   std::cout << "Max: " << max << std::endl;
   std::cout << "Pixel: " << p << std::endl;
+#endif
 }
 
 bool 
@@ -142,9 +146,9 @@ ColourDefinition::isMatch(const Pixel & p) const
     p.red_green >= min.red_green   &&
     p.red_blue >= min.red_blue     &&
     p.green_blue >= min.green_blue &&
-    p.red_ratio >= min.red_ratio   &&
-    p.green_ratio >= min.green_ratio &&
-    p.blue_ratio >= min.blue_ratio &&
+    //    p.red_ratio >= min.red_ratio   &&
+    //    p.green_ratio >= min.green_ratio &&
+    //    p.blue_ratio >= min.blue_ratio &&
 
     p.red <= max.red               &&
     p.green <= max.green           &&
@@ -152,9 +156,9 @@ ColourDefinition::isMatch(const Pixel & p) const
     p.red_green <= max.red_green   &&
     p.red_blue <= max.red_blue     &&
     p.green_blue <= max.green_blue &&
-    p.red_ratio <= max.red_ratio   &&
-    p.green_ratio <= max.green_ratio &&
-    p.blue_ratio <= max.blue_ratio && 
+    //    p.red_ratio <= max.red_ratio   &&
+    //    p.green_ratio <= max.green_ratio &&
+    //    p.blue_ratio <= max.blue_ratio && 
          true;
 }
 
@@ -162,17 +166,110 @@ ColourDefinition::isMatch(const Pixel & p) const
 std::ostream & 
 operator<<(std::ostream & os, ColourDefinition const & cd)
 {
-  os << cd.min;
-  os << cd.max;
-  os << std::endl;
+  os << "{" 
+     << cd.name 
+     << "&"
+     << cd.min.red
+     << "&"
+     << cd.min.green
+     << "&"
+     << cd.min.blue
+     << "&"
+     << cd.max.red
+     << "&"
+     << cd.max.green
+     << "&"
+     << cd.max.blue
+     << "&"
+     << cd.min.red_green
+     << "&"
+     << cd.min.red_blue
+     << "&"
+     << cd.min.green_blue
+     << "&"
+     << cd.max.red_green
+     << "&"
+     << cd.max.red_blue
+     << "&"
+     << cd.max.green_blue
+     << "&"
+     << cd.min.red_ratio
+     << "&"
+     << cd.min.green_ratio
+     << "&"
+     << cd.min.blue_ratio
+     << "&"
+     << cd.max.red_ratio
+     << "&"
+     << cd.max.green_ratio
+     << "&"
+     << cd.max.blue_ratio
+     << "}";
   return os;
 }
+
+struct amp_reader: std::ctype<char> 
+{
+  amp_reader(): std::ctype<char>(get_table()) 
+  {
+  }
+  
+    static std::ctype_base::mask const* get_table() 
+  {
+    static std::vector<std::ctype_base::mask> rc(table_size, std::ctype_base::mask());
+      
+    rc[' '] = std::ctype_base::space;
+    rc['&'] = std::ctype_base::space;
+    rc['\n'] = std::ctype_base::space;
+    return &rc[0];
+  }
+};
 
 std::istream & 
 operator>>(std::istream & is, ColourDefinition & cd)
 {
-  is >> cd.min;
-  is >> cd.max;
+  std::locale ampLocale( std::locale(), new amp_reader() );
+  is.imbue( ampLocale );
+
+  is.ignore(1,'{');
+  is >> cd.name;
+  //  is.ignore(1,'&');
+  is >> cd.min.red;
+  //  is.ignore(1,'&');
+  is >> cd.min.green;
+  //  is.ignore(1,'&');
+  is >> cd.min.blue;
+  //  is.ignore(1,'&');
+  is >> cd.max.red;
+  //  is.ignore(1,'&');
+  is >> cd.max.green;
+  //  is.ignore(1,'&');
+  is >> cd.max.blue;
+  //  is.ignore(1,'&');
+  is >> cd.min.red_green;
+  //  is.ignore(1,'&');
+  is >> cd.min.red_blue;
+  //  is.ignore(1,'&');
+  is >> cd.min.green_blue;
+  //  is.ignore(1,'&');
+  is >> cd.max.red_green;
+  //  is.ignore(1,'&');
+  is >> cd.max.red_blue;
+  //  is.ignore(1,'&');
+  is >> cd.max.green_blue;
+  //  is.ignore(1,'&');
+  is >> cd.min.red_ratio;
+  //  is.ignore(1,'&');
+  is >> cd.min.green_ratio;
+  //  is.ignore(1,'&');
+  is >> cd.min.blue_ratio;
+  //  is.ignore(1,'&');
+  is >> cd.max.red_ratio;
+  //  is.ignore(1,'&');
+  is >> cd.max.green_ratio;
+  //  is.ignore(1,'&');
+  is >> cd.max.blue_ratio;
+  is.ignore(1,'}');
   return is;
 }
 
