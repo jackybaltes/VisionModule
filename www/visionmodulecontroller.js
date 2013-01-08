@@ -114,6 +114,12 @@ function AJAX_response(text) {
 	ResponseControl(text.substring(8));
     } else if ( text.substring(0,11) == "colourlist=" ) {
 	ResponseColourList(text.substring(11));
+    } else if ( text.substring(0,13) == "colour added " ) {
+	ResponseColourAdded( text.substring(13) );
+    } else if ( text.substring(0,15) == "colour deleted " ) {
+	ResponseColourDeleted( text.substring(15) );
+    } else if ( text.substring(0,16) == "colour selected " ) {
+	ResponseColourSelected( text.substring(16) );
     }
 }
 
@@ -239,7 +245,7 @@ function UpdateColourParameters( col ) {
 function OnChangeColourDefinition( ) {
     console.log("Sending new colour definition");
     SendCommand("updatecolour" + "&" + "{" +
-		document.getElementById("colourNameSelector").value + "&" + 
+		colourNameSelector.value + "&" + 
 
 		document.getElementById("redminButton").value + "&" +
 		document.getElementById("greenminButton").value + "&" + 
@@ -271,6 +277,7 @@ function OnChangeColourDefinition( ) {
 function OnChangeSelectedColour( sel ) {
     var c = sel.value;
     SendCommand("querycolour" + "&" + "colour=" + c);
+    SendCommand("selectcolour" + "&" + "name=" + c);
 }
 
 function onmouseupVideo( event ) {
@@ -302,10 +309,13 @@ var width;
 var height;
 var clientRect;
 var mouseDown;
+var colourNameSelector;
 
 function InitVisionModule() {
     video=document.getElementById("videocanvas");
     ctx=video.getContext("2d");
+    colourNameSelector =  document.getElementById( "colourNameSelector" );
+
     width=video.width;
     height=video.height;
     clientRect = video.getBoundingClientRect();
@@ -319,7 +329,7 @@ function InitVisionModule() {
 
     mouseDown = false;
 
-    resetColour = ArrayToColour(["reset","reset","255","255","255","0","0","0","255","255","255","-255","-255","-255","255","255","255","0","0","0"]);
+    resetColour = ArrayToColour(["reset","255","255","255","0","0","0","255","255","255","-255","-255","-255","255","255","255","0","0","0"]);
 
     SendCommand("processingmode" + "&" + "mode=query");
     
@@ -334,12 +344,12 @@ function InitVisionModule() {
     SendCommand("videocontrol" + "&" + "control=" + "gain" + "&" + "value=" + "query");
 
 //    UpdateColourSelection();
+    $( "#add-colour-dialog-modal" ).dialog("close"); 
 
     CreateImageLayer();
 }
 
-function RemoveChildren( id ) {
-    var sel = document.getElementById( id );
+function RemoveChildren( sel ) {
     var n = sel.firstChild;
     while ( n ) {
 	var n2 = n.nextSibling;
@@ -348,9 +358,7 @@ function RemoveChildren( id ) {
     }
 }
 
-function AddArrayToSelection(id, arr ) {
-    var sel = document.getElementById( id );
-
+function AddArrayToSelection(sel, arr ) {
     for(var i=0, len=arr.length; i < len; i++) {
 	var c = arr[i];
 	var e = new Option( c, c );
@@ -360,14 +368,13 @@ function AddArrayToSelection(id, arr ) {
 }
 
 function UpdateColourSelection( colours ) {
-    RemoveChildren( "colourNameSelector" );
-    AddArrayToSelection( "colourNameSelector", colours );
+    RemoveChildren( colourNameSelector );
+    AddArrayToSelection( colourNameSelector, colours );
     UpdateCurrentColourParameters( );
 }
 
 function UpdateCurrentColourParameters() {
-    var sel = document.getElementById( "colourNameSelector" );
-    OnChangeSelectedColour( sel );
+    OnChangeSelectedColour( colourNameSelector );
 }
 
 function AddPixelToColourDefinition( pix ) {
@@ -510,38 +517,48 @@ function ResponseColourList( text ) {
     UpdateColourSelection( colours );
 }
 
+function ResponseColourAdded() {
+    SendCommand("querycolourlist");
+}
+
+function ResponseColourDeleted() {
+    SendCommand("querycolourlist");
+}
+
+function ResponseColourSelected() {
+}
+
 function ArrayToColour( t ) {
     var col;
 
-    if ( t.length == 20 ) {
+    if ( t.length == 19 ) {
 	col = {};
 
 	col.name = t[0];
-	col.value = t[1];
 
-	col.red_min = parseInt( t[2] );
-	col.green_min = parseInt( t[3] );
-	col.blue_min = parseInt( t[4] );
+	col.red_min = parseInt( t[1] );
+	col.green_min = parseInt( t[2] );
+	col.blue_min = parseInt( t[3] );
 
-	col.red_max = parseInt( t[5] );
-	col.green_max = parseInt( t[6] );
-	col.blue_max = parseInt( t[7] );
+	col.red_max = parseInt( t[4] );
+	col.green_max = parseInt( t[5] );
+	col.blue_max = parseInt( t[6] );
 
-	col.redgreen_min = parseInt( t[8] );
-	col.redblue_min = parseInt( t[9] );
-	col.greenblue_min = parseInt( t[10] );
+	col.redgreen_min = parseInt( t[7] );
+	col.redblue_min = parseInt( t[8] );
+	col.greenblue_min = parseInt( t[9] );
 
-	col.redgreen_max = parseInt( t[11] );
-	col.redblue_max = parseInt( t[12] );
-	col.greenblue_max = parseInt( t[13] );
+	col.redgreen_max = parseInt( t[10] );
+	col.redblue_max = parseInt( t[11] );
+	col.greenblue_max = parseInt( t[12] );
 
-	col.redratio_min = parseInt( t[14] );
-	col.greenratio_min = parseInt( t[15] );
-	col.blueratio_min = parseInt( t[16] );
+	col.redratio_min = parseInt( t[13] );
+	col.greenratio_min = parseInt( t[14] );
+	col.blueratio_min = parseInt( t[15] );
 
-	col.redratio_max = parseInt( t[17] );
-	col.greenratio_max = parseInt( t[18] );
-	col.blueratio_max = parseInt( t[19] );	
+	col.redratio_max = parseInt( t[16] );
+	col.greenratio_max = parseInt( t[17] );
+	col.blueratio_max = parseInt( t[18] );	
     }
     return col;
 }
@@ -556,7 +573,7 @@ function TextToColour( text ) {
 
     var t = text.split("&");
 
-    if ( t.length == 20 ) {
+    if ( t.length == 19 ) {
 	col = ArrayToColour( t );
     }
     return col;
@@ -575,4 +592,32 @@ function TextToColourList( text ) {
 
 function OnChangeVideoControl( ctrl ) {
     SendCommand("videocontrol" + "&" + "control=" + ctrl.name + "&value=" + ctrl.value); 
+}
+
+function OnClickedAddColour( ) {
+    $( "#add-colour-dialog-modal" ).dialog("open"); 
+}
+
+function AddColour( ) {
+    var inp = document.getElementById("add-colour-id");
+    var name = inp.value;
+    if ( name != "" ) {
+	var n = colourNameSelector.firstChild;
+	while ( n ) {
+	    if ( n.value == name ) {
+		alert("Colour " + name + " already defined");
+		break;
+	    }
+	    n = n.nextSibling;
+	}
+	if ( ! n ) {
+	    SendCommand( "addcolour" + "&" + "name=" + name );
+	    //	    e = new Option( name, name );
+	    //colourNameSelector.appendChild( e );
+	}
+    }
+}
+
+function OnClickDeleteColour( ) {
+    SendCommand("deletecolour" + "&" + "name=" + colourNameSelector.value );
 }

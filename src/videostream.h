@@ -93,13 +93,16 @@ public:
 		     FrameBuffer * outFrame, 
 		     unsigned int subSample, 
 		     std::vector<ColourDefinition> colours, 
-		     RawPixel marks[] );
+		     RawPixel mark );
 
   static int CommandProcessingMode( VideoStream * video, char const * command, char * response, unsigned int respLength );
   static int CommandUpdateColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
   static int CommandQueryColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
   static int CommandVideoControl( VideoStream * video, char const * command, char * response, unsigned int respLength );
   static int CommandQueryColourList( VideoStream * video, char const * command, char * response, unsigned int respLength );
+  static int CommandAddColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
+  static int CommandDeleteColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
+  static int CommandSelectColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
 
  private:
   VideoDevice * device;
@@ -125,9 +128,22 @@ public:
   void SetMode( enum ProcessType mode );
 
  public:
+  void SetColours( std::vector<ColourDefinition> colours );
+
+ private:
   std::vector<ColourDefinition> colours;
+
+ public:
+  std::vector<ColourDefinition> * nextColours;
+
  public:
   unsigned int subSample;
+
+ private:
+  std::string GetColourList( void );
+
+ private:
+  std::string selectedColour;
 };
 
 #endif /* __VIDEOSTREAM_H__ */

@@ -97,7 +97,7 @@ main( int argc, char ** argv )
       colourOptions.add_options()
 	("colour", po::value<vector<string> >( & colours),"colour definition")
       ;
-
+      
       po::options_description serialOptions("Serial Port Options");
       serialOptions.add_options()
 	("serial_device", po::value<string>( & device_serial )->default_value(""),"serial device name or empty for no serial port output")
@@ -215,20 +215,30 @@ main( int argc, char ** argv )
       video->server.conf.video = video;
       video->server.conf.serial = serial;
 
+      std::vector<ColourDefinition> colourDefs;
+
       for(std::vector<string>::iterator it = colours.begin(); it != colours.end(); ++it) 
 	{
 	  ColourDefinition cd;
 	  std::stringstream is(*it);
+	  is.clear();
 	  is >> cd;
-	  if ( is.fail() ) 
+	  if ( ! is.fail() ) 
 	    {
-	      std::cerr << "Reading of colour failed:" << (*it) << std::endl;
+	      colourDefs.push_back( cd );
+	    }
+	  else
+	    {
+	      std::cerr << "Reading of colour " << (*it) << " failed" << std::endl;
 	    }
 
 #if defined(DEBUG)
 	  cout << "adding colour" << endl;
 #endif	  
 	}
+      video->nextColours = 0;
+      video->SetColours( colourDefs );
+
 #if defined(DEBUG)
       cout << "Starting video thread" << endl;
 #endif

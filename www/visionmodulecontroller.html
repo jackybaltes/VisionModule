@@ -93,9 +93,9 @@ Configuration</a></li>
 <option value="grey"> grey </option>
 </select>
 
-<button onclick="addColour()" value="Add Colour" name="addcolour" type="button">Add Colour </button>
+<button onclick="OnClickedAddColour()" value="Add Colour" name="addcolour" type="button">Add Colour </button>
 
-<button onclick="delColour()" value="Delete Colour" name="delcolour" type="button">Delete Colour </button><br>
+<button onclick="OnClickDeleteColour()" value="Delete Colour" name="deletecolour" type="button">Delete Colour </button><br>
 
 <table style="text-align: center; width: 600px;" display="none" border="1" cellpadding="1" cellspacing="1">
 
@@ -283,10 +283,32 @@ Max</th>
 <div id="hints" style="background-color: green;">
 Communication Hints </div>
 
+
+<div id="add-colour-dialog-modal" title="Add Colour">
+    <p>Enter the name of the new colour or object.</p>
+    <input id="add-colour-id" name="add-colour-name" value="">
+</div>
+
 <script>
-$(function() {
-$( "#tabs" ).tabs();
-});
+  $(function() {
+     $( "#tabs" ).tabs();
+  });
+  
+  $(function() {
+     $( "#add-colour-dialog-modal" ).dialog({
+        height: 200,
+        modal: true,
+        buttons: {
+           "Add Colour": function() {
+               AddColour();
+               $( this ).dialog( "close" );               
+            },
+            Cancel: function() {
+               $( this ).dialog( "close" );
+            }
+         }
+     });
+  });
 </script>
 </div>
 

@@ -56,7 +56,9 @@ struct Command const VideoStream::Commands[] =
     VideoStream::CommandVideoControl,
     VideoStream::CommandQueryColour,
     VideoStream::CommandQueryColourList,
-    
+    VideoStream::CommandAddColour,
+    VideoStream::CommandDeleteColour,
+    VideoStream::CommandSelectColour,
     { NULL }
   };
 
@@ -150,27 +152,31 @@ VideoStream::run( )
       outFrame->initialize( cameraFrame->width, cameraFrame->height );
     }
 
-  colours.clear();
+  RawPixel mark = RawPixel(255,0,0);
 
-  colours.push_back( ColourDefinition("red", 
-				      Pixel(60,60,60,-50,60,128,0,0,0),
-				      Pixel(255,255,128,0,180,180,255,255,255)) );
-  colours.push_back( ColourDefinition( "green",
-				       Pixel(0,100,0,-255,-255,-255,0,0,0),
-				       Pixel(128,255,128,0,255,0,255,255,255) ) );
-  colours.push_back( ColourDefinition( "blue",
-				       Pixel(0,0,100,-255,-255,-255,0,0,0),
-				       Pixel(255,255,255,255,0,0,255,255,255) ) );
+#if 1
+        for( vector<ColourDefinition>::iterator i = colours.begin();
+	   i != colours.end();
+	   ++i)
+	{
+	  std::cout << (*i) << std::endl;
+	}
+#endif
   
-  RawPixel marks[] = { RawPixel(255,0,0), RawPixel(0,255,255), RawPixel(0,0,255) };
-
   done = false;
   while( ! done )
     {
       device->nextFrame( & cameraFrame );
       if ( cameraFrame != 0 )
 	{
-	  ProcessFrame( mode, cameraFrame, outFrame, subSample, colours, marks );
+	  if ( nextColours != 0 )
+	    {
+	      // Possible race condition?
+	      colours = * nextColours;
+	      nextColours = 0;
+	    }
+	  
+	  ProcessFrame( mode, cameraFrame, outFrame, subSample, colours, mark );
 	}
       device->releaseCurrentBuffer();
       sendImage( outFrame );
@@ -189,7 +195,7 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
 			   FrameBuffer * outFrame, 
 			   unsigned int subSample, 
 			   std::vector<ColourDefinition> colours,
-			   RawPixel marks[]
+			   RawPixel mark
 			   )
 {
   outFrame->fill( RawPixel( 0, 0, 0 ) );
@@ -203,11 +209,14 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
     {
       for( unsigned int i = 0; i < colours.size(); i++ )
 	{
-	  ImageProcessing::swapColours( outFrame, 0,
-					Rect( Point(0,0), Point(outFrame->width, outFrame->height) ), 
-					subSample,
-					colours[i], 
-					marks[i] );
+	  if ( colours[i].name == selectedColour ) 
+	    {
+	      ImageProcessing::swapColours( outFrame, 0,
+					    Rect( Point(0,0), Point(outFrame->width, outFrame->height) ), 
+					    subSample,
+					    colours[i], 
+					    mark );
+	    }
 	}
     }
 
@@ -222,7 +231,7 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
 					   50,5,10,
 					   subSample,
 					   colours[i], 
-					   marks[i],
+					   mark,
 					   results );
 	  DBG("Segmentation found %d results", results.size() );
 	  for( std::list<VisionObject>::iterator i = results.begin();
@@ -523,7 +532,7 @@ VideoStream::CommandQueryColour( VideoStream * video, char const * command, char
 	  s = s + strlen("colour=");
 	  start = s;
 	  len = 0;
-	  while( ( *s != '\0') && ( *s != '&' ) )
+	  while( ( *s != '\0') && ( *s != '&' ) && (*s != '\n') )
 	    {
 	      s++;
 	      len++;
@@ -534,34 +543,193 @@ VideoStream::CommandQueryColour( VideoStream * video, char const * command, char
 	  ColourDefinition * col = video->GetColour( name );
 	  if ( col != 0 )
 	    {
-	      snprintf(response,respLength-1, "colour={%s&%s&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d&%d}",
-		       col->name.c_str(),
-		       col->name.c_str(),
+	      std::stringstream os;
+	      os << *col;
 
-		       col->min.red,
-		       col->min.green,
-		       col->min.blue,
+	      snprintf(response, respLength-1, "colour=%s", os.str().c_str());
+	      response[respLength-1] = '\0';
+	      ret = COMMAND_ERR_OK;
+	    }
+	  else
+	    {
+	      strncpy(response,"colour UNKNOWN", respLength - 1 );
+	      response[respLength-1] = '\0';
+	      ret = COMMAND_ERR_PARAMETER;
+	    }
+	}
+    }
+  return ret;
+}
 
-		       col->max.red,
-		       col->max.green,
-		       col->max.blue,
+int
+VideoStream::CommandAddColour( VideoStream * video, char const * command, char * response, unsigned int respLength )
+{
+  int ret = COMMAND_ERR_COMMAND;
+  char const * s;
+  char const * start;
+  size_t len;
 
-		       col->min.red_green,
-		       col->min.red_blue,
-		       col->min.green_blue,
+  std::string name;
 
-		       col->max.red_green,
-		       col->max.red_blue,
-		       col->max.green_blue,
+  response[0] = '\0';
 
-		       col->min.red_ratio,
-		       col->min.green_ratio,
-		       col->min.blue_ratio,
+  if ( ( s = strstr(command, "command=addcolour") ) != NULL )
+    {
+      s = s + strlen("command=addcolour");
 
-		       col->max.red_ratio,
-		       col->max.green_ratio,
-		       col->max.blue_ratio
-		       );
+      if ( ( s = strstr(s,"name=") ) != NULL ) 
+	{
+	  s = s + strlen("name=");
+	  start = s;
+	  len = 0;
+	  while( ( *s != '\0') && ( *s != '&' ) && (*s != '\n') )
+	    {
+	      s++;
+	      len++;
+	    }
+	  
+	  std::string name( start, len );
+
+	  ColourDefinition * col = video->GetColour(name);
+	  if ( col == 0 )
+	    {
+	      ColourDefinition newColour( name );
+
+	      while( video->nextColours != 0 ) 
+		{
+		};
+
+	      std::vector<ColourDefinition> tmp = video->colours;
+	      
+	      tmp.push_back( newColour );
+	      
+	      video->nextColours = & tmp;
+
+	      while( video->nextColours != 0 ) 
+		{
+		};
+
+	      snprintf( response, respLength-1, "colour added %s", name.c_str() );
+	      response[respLength-1] = '\0';
+	      ret = COMMAND_ERR_OK;
+	    }
+	  else
+	    {
+	      strncpy(response,"colour already defined", respLength - 1 );
+	      response[respLength-1] = '\0';
+	      ret = COMMAND_ERR_PARAMETER;
+	    }
+	}
+    }
+  return ret;
+}
+
+int
+VideoStream::CommandDeleteColour( VideoStream * video, char const * command, char * response, unsigned int respLength )
+{
+  int ret = COMMAND_ERR_COMMAND;
+  char const * s;
+  char const * start;
+  size_t len;
+
+  std::string name;
+
+  response[0] = '\0';
+
+  if ( ( s = strstr(command, "command=deletecolour") ) != NULL )
+    {
+      s = s + strlen("command=deletecolour");
+
+      if ( ( s = strstr(s,"name=") ) != NULL ) 
+	{
+	  s = s + strlen("name=");
+	  start = s;
+	  len = 0;
+	  while( ( *s != '\0') && ( *s != '&' ) && (*s != '\n') )
+	    {
+	      s++;
+	      len++;
+	    }
+	  
+	  std::string name( start, len );
+
+	  ColourDefinition * col = video->GetColour( name );
+	  if ( col != 0 )
+	    {
+	      std::vector<ColourDefinition> tmp = video->colours;
+
+	      for( vector<ColourDefinition>::iterator i = tmp.begin();
+		   i != tmp.end();
+		   ++i)
+		{
+		  if ( (*i).name == name )
+		    {
+		      tmp.erase(i);
+		      break;
+		    }
+		}
+	      
+	      
+	      while( video->nextColours != 0  ) 
+		{
+		};
+
+	      video->nextColours = & tmp;
+
+	      while( video->nextColours != 0  ) 
+		{
+		};
+
+	      snprintf( response, respLength-1, "colour added %s", name.c_str() );
+	      response[respLength-1] = '\0';
+	      ret = COMMAND_ERR_OK;
+	    }
+	  else
+	    {
+	      strncpy(response,"colour UNKNOWN", respLength - 1 );
+	      response[respLength-1] = '\0';
+	      ret = COMMAND_ERR_PARAMETER;
+	    }
+	}
+    }
+  return ret;
+}
+
+int
+VideoStream::CommandSelectColour( VideoStream * video, char const * command, char * response, unsigned int respLength )
+{
+  int ret = COMMAND_ERR_COMMAND;
+  char const * s;
+  char const * start;
+  size_t len;
+
+  std::string name;
+
+  response[0] = '\0';
+
+  if ( ( s = strstr(command, "command=selectcolour") ) != NULL )
+    {
+      s = s + strlen("command=selectcolour");
+
+      if ( ( s = strstr(s,"name=") ) != NULL ) 
+	{
+	  s = s + strlen("name=");
+	  start = s;
+	  len = 0;
+	  while( ( *s != '\0') && ( *s != '&' ) && (*s != '\n') )
+	    {
+	      s++;
+	      len++;
+	    }
+	  
+	  std::string name( start, len );
+
+	  ColourDefinition * col = video->GetColour( name );
+	  if ( col != 0 )
+	    {
+	      video->selectedColour = col->name;
+
+	      snprintf( response, respLength-1, "colour selected %s", col->name.c_str() );
 	      response[respLength-1] = '\0';
 	      ret = COMMAND_ERR_OK;
 	    }
@@ -591,18 +759,7 @@ VideoStream::CommandQueryColourList( VideoStream * video, char const * command, 
   if ( ( s = strstr(command, "command=querycolourlist") ) != NULL )
     {
       s = s + strlen("command=querycolourlist");
-      std::string list;
-
-      for( vector<ColourDefinition>::iterator i = video->colours.begin();
-	   i != video->colours.end();
-	   ++i)
-	{
-	  if ( i != video->colours.begin() )
-	    {
-	      list = list + "&";
-	    }
-	  list = list + (*i).name;
-	}
+      std::string list = video->GetColourList();
 
       snprintf(response,respLength-1, "colourlist={%s}", list.c_str() );
       response[respLength-1] = '\0';
@@ -824,3 +981,26 @@ VideoStream::GetColour( std::string const & name )
   return col;
 }
 
+std::string
+VideoStream::GetColourList( void )
+{
+  std::string list;
+
+  for( vector<ColourDefinition>::iterator i = colours.begin();
+       i != colours.end();
+       ++i)
+    {
+      if ( i != colours.begin() )
+	{
+	  list = list + "&";
+	}
+      list = list + (*i).name;
+    }
+  return list;
+}
+
+void
+VideoStream::SetColours( std::vector<ColourDefinition> colours )
+{
+  this->colours = colours;
+}

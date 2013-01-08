@@ -9,6 +9,7 @@ class ColourDefinition
 {
  public:
   ColourDefinition();
+  ColourDefinition( std::string name );
   ColourDefinition( std::string name, Pixel min, Pixel max );
   ~ColourDefinition();
   ColourDefinition(const ColourDefinition & rhs);

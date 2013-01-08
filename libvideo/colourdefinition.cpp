@@ -12,6 +12,14 @@ ColourDefinition::ColourDefinition() :
 
 }
 
+ColourDefinition::ColourDefinition( std::string name ) :
+  name(name),
+  min(255,255,255),
+  max(0,0,0)
+{
+
+}
+
 ColourDefinition::ColourDefinition( std::string name, Pixel min, Pixel max )
   :name(name),
    min(min),
