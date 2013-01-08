@@ -95,3 +95,15 @@ VideoDevice::SetSharpness( unsigned int val )
 {
   return -1;
 }
+
+int 
+VideoDevice::GetGain( void )
+{
+  return -1;
+}
+
+int 
+VideoDevice::SetGain( unsigned int val )
+{
+  return -1;
+}

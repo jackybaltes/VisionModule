@@ -331,6 +331,8 @@ function InitVisionModule() {
 
     SendCommand("videocontrol" + "&" + "control=" + "sharpness" + "&" + "value=" + "query");
 
+    SendCommand("videocontrol" + "&" + "control=" + "gain" + "&" + "value=" + "query");
+
 //    UpdateColourSelection();
 
     CreateImageLayer();

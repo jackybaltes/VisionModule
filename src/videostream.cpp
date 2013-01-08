@@ -568,6 +568,8 @@ VideoStream::CommandQueryColourList( VideoStream * video, char const * command, 
   return ret;
 }
 
+// Must match the enum VideoControl
+
 char const * VideoControlStrings[] = 
   {
     "illegal control",
@@ -575,7 +577,8 @@ char const * VideoControlStrings[] =
     "hue",
     "saturation",
     "contrast",
-    "sharpness"
+    "sharpness",
+    "gain"
   };
 
 
@@ -658,6 +661,13 @@ VideoStream::CommandVideoControl( VideoStream * video, char const * command, cha
 			  ret = COMMAND_ERR_OK;
 			}
 		      break;
+		    case Gain:
+		      err = video->device->SetGain( val );
+		      if ( err >= 0 )
+			{
+			  ret = COMMAND_ERR_OK;
+			}
+		      break;
 		    default:
 		      ret = COMMAND_ERR_COMMAND;
 		      break;
@@ -693,6 +703,13 @@ VideoStream::CommandVideoControl( VideoStream * video, char const * command, cha
 		      break;
 		    case Sharpness:
 		      v = video->device->GetSharpness( );
+		      if ( v < 0 )
+			{
+			  ret = COMMAND_ERR_COMMAND;
+			}
+		      break;
+		    case Gain:
+		      v = video->device->GetGain( );
 		      if ( v < 0 )
 			{
 			  ret = COMMAND_ERR_COMMAND;

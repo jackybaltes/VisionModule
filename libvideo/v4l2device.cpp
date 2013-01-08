@@ -1389,5 +1389,40 @@ V4L2Device::GetSharpness( void )
   return result;
 }
 
+int
+V4L2Device::SetGain( unsigned int val )
+{
+  struct v4l2_control vc;
+  memset( &vc, 0, sizeof(vc) );
+
+  vc.id = V4L2_CID_GAIN;
+  if ( val > 0 )
+    {
+      vc.value = val;
+    }
+  return setControl( & vc );
+}
+
+int
+V4L2Device::GetGain( void )
+{
+  struct v4l2_control vc;
+  memset( &vc, 0, sizeof(vc) );
+
+  vc.id = V4L2_CID_GAIN;
+  unsigned int ret = getControl( & vc );  
+  unsigned int result = -1;
+  if ( ret == 0 )
+    {
+      result = vc.value;
+    }
+  else
+    {
+      std::cerr << "getgain failed" << std::endl;
+      result = -1;
+    }
+  return result;
+}
+
 
 

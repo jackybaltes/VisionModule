@@ -33,6 +33,8 @@ public:
   virtual int SetSaturation( unsigned int val );
   virtual int GetSharpness( void );
   virtual int SetSharpness( unsigned int val );
+  virtual int GetGain( void );
+  virtual int SetGain( unsigned int val );
 
   int getWidth() const;
   int getHeight() const;

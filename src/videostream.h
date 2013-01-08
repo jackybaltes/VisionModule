@@ -42,7 +42,8 @@ public:
     Hue,
     Saturation,
     Contrast,
-    Sharpness
+    Sharpness,
+    Gain
   };
 
   VideoStream(string driver,
