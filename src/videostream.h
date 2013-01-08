@@ -93,6 +93,7 @@ public:
   static int CommandUpdateColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
   static int CommandQueryColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
   static int CommandVideoControl( VideoStream * video, char const * command, char * response, unsigned int respLength );
+  static int CommandQueryColourList( VideoStream * video, char const * command, char * response, unsigned int respLength );
 
  private:
   VideoDevice * device;

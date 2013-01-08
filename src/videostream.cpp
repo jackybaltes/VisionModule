@@ -55,6 +55,7 @@ struct Command const VideoStream::Commands[] =
     VideoStream::CommandUpdateColour, 
     VideoStream::CommandVideoControl,
     VideoStream::CommandQueryColour,
+    VideoStream::CommandQueryColourList,
     
     { NULL }
   };
@@ -522,6 +523,47 @@ VideoStream::CommandQueryColour( VideoStream * video, char const * command, char
 	      ret = COMMAND_ERR_PARAMETER;
 	    }
 	}
+    }
+  return ret;
+}
+
+int
+VideoStream::CommandQueryColourList( VideoStream * video, char const * command, char * response, unsigned int respLength )
+{
+  int ret = COMMAND_ERR_COMMAND;
+  char const * s;
+  char const * start;
+  size_t len;
+
+  std::string name;
+
+  response[0] = '\0';
+
+  if ( ( s = strstr(command, "command=querycolourlist") ) != NULL )
+    {
+      s = s + strlen("command=querycolourlist");
+      std::string list;
+
+      for( vector<ColourDefinition>::iterator i = video->colours.begin();
+	   i != video->colours.end();
+	   ++i)
+	{
+	  if ( i != video->colours.begin() )
+	    {
+	      list = list + "&";
+	    }
+	  list = list + (*i).name;
+	}
+
+      snprintf(response,respLength-1, "colourlist={%s}", list.c_str() );
+      response[respLength-1] = '\0';
+      ret = COMMAND_ERR_OK;
+    }
+  else
+    {
+      strncpy(response,"colourlist UNKNOWN", respLength - 1 );
+      response[respLength-1] = '\0';
+      ret = COMMAND_ERR_PARAMETER;
     }
   return ret;
 }

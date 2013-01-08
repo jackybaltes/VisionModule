@@ -2,14 +2,7 @@
 // Jacky Baltes <jacky@cs.umanitoba.ca> Sun Jan  6 21:19:09 CST 2013
 //
 
-var red = { "name":"red", "value":"red", "red_min":255 };
-var green = { "name":"green", "value":"green", "red_min":255 };
-var blue = { "name":"blue", "value":"blue", "red_min":255 };
-var cyan = { "name":"cyan", "value":"cyan", "red_min":255 };
-var magenta = { "name":"magenta", "value":"magenta", "red_min":255 };
 var resetColour;
-
-var colours = new Array( red, green, blue, cyan, magenta );
 
 function AJAX_stateCallback( req ) {
   var stat, rstate;
@@ -119,7 +112,9 @@ function AJAX_response(text) {
 	ResponseColour(text.substring(7));
     } else if ( text.substring(0,8) == "control=" ) {
 	ResponseControl(text.substring(8));
-    } 
+    } else if ( text.substring(0,11) == "colourlist=" ) {
+	ResponseColourList(text.substring(11));
+    }
 }
 
 function KeyDown(ev) {
@@ -315,6 +310,8 @@ function InitVisionModule() {
     height=video.height;
     clientRect = video.getBoundingClientRect();
 
+    SendCommand("querycolourlist");
+
     video.addEventListener('mousedown',onmousedownVideo, false);
     video.addEventListener('mousemove',onmouseclickVideo, false);
     video.addEventListener('mouseup',onmouseupVideo, false);
@@ -334,7 +331,7 @@ function InitVisionModule() {
 
     SendCommand("videocontrol" + "&" + "control=" + "sharpness" + "&" + "value=" + "query");
 
-    UpdateColourSelection();
+//    UpdateColourSelection();
 
     CreateImageLayer();
 }
@@ -354,13 +351,13 @@ function AddArrayToSelection(id, arr ) {
 
     for(var i=0, len=arr.length; i < len; i++) {
 	var c = arr[i];
-	var e = new Option( c.name, c.value );
+	var e = new Option( c, c );
 
 	sel.appendChild(e);
     }    
 }
 
-function UpdateColourSelection() {
+function UpdateColourSelection( colours ) {
     RemoveChildren( "colourNameSelector" );
     AddArrayToSelection( "colourNameSelector", colours );
     UpdateCurrentColourParameters( );
@@ -506,6 +503,11 @@ function ResponseColour( text ) {
     UpdateColourParameters( col );
 }
 
+function ResponseColourList( text ) {
+    colours = TextToColourList( text );
+    UpdateColourSelection( colours );
+}
+
 function ArrayToColour( t ) {
     var col;
 
@@ -556,6 +558,17 @@ function TextToColour( text ) {
 	col = ArrayToColour( t );
     }
     return col;
+}
+
+function TextToColourList( text ) {
+
+    if ( ( text[0] == "{" ) && ( text[text.length-1] == "}" ) ) {
+	text = text.substring(1,text.length-1);
+    }
+
+    var colours = text.split("&");
+
+    return colours;
 }
 
 function OnChangeVideoControl( ctrl ) {
