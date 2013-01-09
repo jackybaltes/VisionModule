@@ -36,18 +36,28 @@ public:
   virtual int GetGain( void );
   virtual int SetGain( unsigned int val );
 
-  int getWidth() const;
-  int getHeight() const;
-  
+  int GetWidth() const;
+  int GetHeight() const;
+
+ protected:
+  std::string devname;
+
+ public:
+  std::string GetDeviceName( void ) const;
+
+ protected:
+  unsigned int depth;
+
+ public:
+  unsigned int GetDepth( void ) const;
+
  protected:
   std::string driver;
-  std::string devname;
   std::string input;
   std::string standard;
   unsigned int fps;
   unsigned int width;
   unsigned int height;
-  unsigned int depth;
   unsigned int numBuffers;
 
   bool error;

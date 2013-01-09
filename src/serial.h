@@ -27,14 +27,14 @@ class Serial
   int readChar( char * p );
   unsigned int receiveBuffer (__uint8_t * buffer, unsigned int msgLength);
 
-  static speed_t convertBaudrate( string s );
-  static string convertBaudrateToString( speed_t s );
+  static speed_t ConvertStringToBaudrate( string s );
+  static string ConvertBaudrateToString( speed_t s );
   static string bufferToHexString( unsigned char buffer[], unsigned int len );
   void rxFlush();
   void txFlush();
 
-  inline string getDeviceName( void ) { return devname; }
-  inline speed_t getBaudrate( void ) { return baudrate; }
+  inline string GetDeviceName( void ) { return devname; }
+  inline speed_t GetBaudrate( void ) { return baudrate; }
 
  private:
   struct termios oldtio;

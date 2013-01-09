@@ -621,3 +621,7 @@ function AddColour( ) {
 function OnClickDeleteColour( ) {
     SendCommand("deletecolour" + "&" + "name=" + colourNameSelector.value );
 }
+
+function LoadConfiguration( ) {
+    window.open( "../vision_module_test.cfg", "Download Configuration" );
+}

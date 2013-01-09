@@ -282,7 +282,7 @@ Serial::receiveBuffer (__uint8_t * buffer, unsigned int msgLength)
 }
 
 speed_t 
-Serial::convertBaudrate( std::string s )
+Serial::ConvertStringToBaudrate( std::string s )
 {
   speed_t b;
 
@@ -374,7 +374,7 @@ Serial::convertBaudrate( std::string s )
 }
 
 string
-Serial::convertBaudrateToString( speed_t b )
+Serial::ConvertBaudrateToString( speed_t b )
 {
   string s;
 

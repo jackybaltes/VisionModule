@@ -1,29 +1,12 @@
-/*******************************************************************************
-#                                                                              #
-#      MJPG-streamer allows to stream JPG frames from an input-plugin          #
-#      to several output plugins                                               #
-#                                                                              #
-#      Copyright (C) 2007 busybox-project (base64 function)                    #
-#      Copyright (C) 2007 Tom Stöveken                                         #
-#                                                                              #
-# This program is free software; you can redistribute it and/or modify         #
-# it under the terms of the GNU General Public License as published by         #
-# the Free Software Foundation; version 2 of the License.                      #
-#                                                                              #
-# This program is distributed in the hope that it will be useful,              #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of               #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                #
-# GNU General Public License for more details.                                 #
-#                                                                              #
-# You should have received a copy of the GNU General Public License            #
-# along with this program; if not, write to the Free Software                  #
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA    #
-#                                                                              #
-*******************************************************************************/
+/**
+ * Jacky Baltes <jacky@cs.umanitoba.ca> Tue Jan  8 22:55:42 CST 2013
+ */
+
 
 #include <iostream>
 #include <string>
 #include <cstdlib>
+#include <sstream>
 
 #include <string.h>
 #include <sys/time.h>
@@ -40,6 +23,7 @@
 #include <inttypes.h>
 
 #include "httpd.h"
+#include "videostream.h"
 
 context * HTTPD::server;
 globals * HTTPD::pglobal;
@@ -51,7 +35,9 @@ Description.: initializes the iobuffer structure properly
 Input Value.: pointer to already allocated iobuffer
 Return Value: iobuf
 ******************************************************************************/
-void HTTPD::init_iobuffer(iobuffer *iobuf) {
+void 
+HTTPD::init_iobuffer(iobuffer *iobuf) 
+{
   memset(iobuf->buffer, 0, sizeof(iobuf->buffer));
   iobuf->level = 0;
 }
@@ -405,7 +391,8 @@ Input Value.: * fd.......: filedescriptor to send data to
               * id.......: specifies which server-context is the right one
 Return Value: -
 ******************************************************************************/
-void HTTPD::send_file(int fd, char const * parameter) {
+void HTTPD::send_file(int fd, char const * parameter) 
+{
   char buffer[BUFFER_SIZE] = {0};
   char const * extension, *mimetype=NULL;
   int i, lfd;
@@ -443,32 +430,70 @@ void HTTPD::send_file(int fd, char const * parameter) {
   /* build the absolute path to the file */
   strncat(buffer, conf.docroot, sizeof(buffer)-1);
   strncat(buffer, parameter, sizeof(buffer)-strlen(buffer)-1);
+  
+  if ( !strcmp( parameter, "__config__.cfg" ) )
+    {
+      std::string configString = server->conf.video->ReadRunningConfiguration( );
+      if ( configString != "" )
+	{
+	  stringstream os;
 
-  /* try to open that file */
-  if ( (lfd = open(buffer, O_RDONLY)) < 0 ) {
-    DBG("file %s not accessible\n", buffer);
-    send_error(fd, 404, "Could not open file");
-    return;
-  }
-  DBG("opened file: %s\n", buffer);
+	  os << "HTTP/1.0 200 OK\r\n"	
+	     << "Content-type: %s\r\n"
+	     << "Content-Disposition: attachment\r\n"
+	     << STD_HEADER << "\r\n" 
+	     << configString
+	     << "\r\n";
 
-  /* prepare HTTP header */
-  sprintf(buffer, "HTTP/1.0 200 OK\r\n" \
-                  "Content-type: %s\r\n" \
-                  STD_HEADER \
-                  "\r\n", mimetype);
-  i = strlen(buffer);
-
-  /* first transmit HTTP-header, afterwards transmit content of file */
-  do {
-    if ( write(fd, buffer, i) < 0 ) {
-      close(lfd);	  
-      return;
+	  if ( write(fd, os.str().c_str(), strlen( os.str().c_str() ) ) < 0 )
+	    {
+	      return;
+	    }
+	}
     }
-  } while ( (i=read(lfd, buffer, sizeof(buffer))) > 0 );
+  else
+    {
+      /* try to open that file */
+      if ( (lfd = open(buffer, O_RDONLY)) < 0 ) 
+	{
+	  DBG("file %s not accessible\n", buffer);
+	  send_error(fd, 404, "Could not open file");
+	  return;
+	}
 
-  /* close file, job done */
-  close(lfd);
+      DBG("opened file: %s\n", buffer);
+      
+      char const * disposition;
+      
+      if ( ! strcmp( extension, ".cfg" ) ) 
+	{
+	  disposition = "Content-Disposition: attachment\r\n";
+	}
+      else
+	{
+	  disposition = "";
+	}
+      
+      /* prepare HTTP header */
+      sprintf(buffer, "HTTP/1.0 200 OK\r\n"	\
+	      "Content-type: %s\r\n"		\
+	      "%s"				\
+	      STD_HEADER			\
+	      "\r\n", mimetype, disposition);
+      i = strlen(buffer);
+      /* first transmit HTTP-header, afterwards transmit content of file */
+      
+  
+      do {
+	if ( write(fd, buffer, i) < 0 ) {
+	  close(lfd);	  
+	  return;
+	}
+      } while ( (i=read(lfd, buffer, sizeof(buffer))) > 0 );
+      
+      /* close file, job done */
+      close(lfd);
+    }
 }
 
 /******************************************************************************
@@ -542,13 +567,14 @@ Input Value.: arg is the filedescriptor and server-context of the connected TCP
 Return Value: always NULL
 ******************************************************************************/
 /* thread for clients that connected to this server */
-void* HTTPD::client_thread( void *arg ) {
+void* HTTPD::client_thread( void *arg ) 
+{
   int cnt;
   char buffer[BUFFER_SIZE]={0}, *pb=buffer;
   iobuffer iobuf;
   request req;
   cfd lcfd; /* local-connected-file-descriptor */
-
+  
   /* we really need the fildescriptor and it must be freeable by us */
   if (arg != NULL) 
     {
@@ -559,88 +585,95 @@ void* HTTPD::client_thread( void *arg ) {
     {
       return NULL;
     }
-
+  
   /* initializes the structures */
   init_iobuffer(&iobuf);
   init_request(&req);
-
+  
   /* What does the client want to receive? Read the request. */
   memset(buffer, 0, sizeof(buffer));
   if ( (cnt = _readline(lcfd.fd, &iobuf, buffer, sizeof(buffer)-1, 5)) == -1 ) {
     close(lcfd.fd);
     return NULL;
   }
-
+  
   /* determine what to deliver */
-  if ( strstr(buffer, "GET /?action=snapshot") != NULL ) {
-    req.type = A_SNAPSHOT;
-  }
-  else if ( strstr(buffer, "GET /?action=stream") != NULL ) {
-    req.type = A_STREAM;
-  }
-  else if ( strstr(buffer, "GET /?action=command") != NULL ) {
-    int len;
-    req.type = A_COMMAND;
-
-    /* advance by the length of known string */
-    if ( (pb = strstr(buffer, "GET /?action=command")) == NULL ) 
-      {
-	DBG("HTTP request seems to be malformed\n");
-	send_error(lcfd.fd, 400, "Malformed HTTP request");
-	close(lcfd.fd);
-	return NULL;
+  if ( strstr(buffer, "GET /?action=snapshot") != NULL ) 
+    {
+      req.type = A_SNAPSHOT;
+    }
+  else if ( strstr(buffer, "GET /?action=stream") != NULL ) 
+    {
+      req.type = A_STREAM;
+    }
+  else if ( strstr(buffer, "GET /?action=command") != NULL ) 
+    {
+      int len;
+      req.type = A_COMMAND;
+      
+      /* advance by the length of known string */
+      if ( (pb = strstr(buffer, "GET /?action=command")) == NULL ) 
+	{
+	  DBG("HTTP request seems to be malformed\n");
+	  send_error(lcfd.fd, 400, "Malformed HTTP request");
+	  close(lcfd.fd);
+	  return NULL;
+	}
+      pb += strlen("GET /?action=command");
+      
+      /* only accept certain characters */
+      len = MIN(MAX(strspn(pb, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-=&1234567890.{}"), 0), 100);
+      req.parameter = (char*)malloc(len+1);
+      if ( req.parameter == NULL ) {
+	exit(EXIT_FAILURE);
       }
-    pb += strlen("GET /?action=command");
-
-    /* only accept certain characters */
-    len = MIN(MAX(strspn(pb, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-=&1234567890.{}"), 0), 100);
-    req.parameter = (char*)malloc(len+1);
-    if ( req.parameter == NULL ) {
-      exit(EXIT_FAILURE);
+      memset(req.parameter, 0, len+1);
+      strncpy(req.parameter, pb, len);
+      
+      DBG("command parameter (len: %d): \"%s\"\n", len, req.parameter);
     }
-    memset(req.parameter, 0, len+1);
-    strncpy(req.parameter, pb, len);
-
-    DBG("command parameter (len: %d): \"%s\"\n", len, req.parameter);
-  }
-  else {
-    int len;
-
-    DBG("try to serve a file\n");
-    req.type = A_FILE;
-
-    if ( (pb = strstr(buffer, "GET /")) == NULL ) {
-      DBG("HTTP request seems to be malformed\n");
-      send_error(lcfd.fd, 400, "Malformed HTTP request");
-      close(lcfd.fd);
-      return NULL;
+  else 
+    {
+      int len;
+      
+      DBG("try to serve a file\n");
+      req.type = A_FILE;
+      
+      if ( (pb = strstr(buffer, "GET /")) == NULL ) 
+	{
+	  DBG("HTTP request seems to be malformed\n");
+	  send_error(lcfd.fd, 400, "Malformed HTTP request");
+	  close(lcfd.fd);
+	  return NULL;
+	}
+      
+      pb += strlen("GET /");
+      len = MIN(MAX(strspn(pb, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ._-1234567890"), 0), 100);
+      req.parameter = (char*)malloc(len+1);
+      if ( req.parameter == NULL ) 
+	{
+	  exit(EXIT_FAILURE);
+	}
+    
+      memset(req.parameter, 0, len+1);
+      strncpy(req.parameter, pb, len);
     }
-
-    pb += strlen("GET /");
-    len = MIN(MAX(strspn(pb, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ._-1234567890"), 0), 100);
-    req.parameter = (char*)malloc(len+1);
-    if ( req.parameter == NULL ) {
-      exit(EXIT_FAILURE);
-    }
-    memset(req.parameter, 0, len+1);
-    strncpy(req.parameter, pb, len);
-
-    DBG("parameter (len: %d): \"%s\"\n", len, req.parameter);
-  }
-
+  DBG("parameter (len: %d): \"%s\"\n", len, req.parameter);
+  
   /*
    * parse the rest of the HTTP-request
    * the end of the request-header is marked by a single, empty line with "\r\n"
    */
   do {
     memset(buffer, 0, sizeof(buffer));
-
-    if ( (cnt = _readline(lcfd.fd, &iobuf, buffer, sizeof(buffer)-1, 5)) == -1 ) {
-      free_request(&req);
-      close(lcfd.fd);
-      return NULL;
-    }
-
+    
+    if ( (cnt = _readline(lcfd.fd, &iobuf, buffer, sizeof(buffer)-1, 5)) == -1 ) 
+      {
+	free_request(&req);
+	close(lcfd.fd);
+	return NULL;
+      }
+    
     if ( strstr(buffer, "User-Agent: ") != NULL ) {
       req.client = strdup(buffer+strlen("User-Agent: "));
     }
@@ -649,9 +682,9 @@ void* HTTPD::client_thread( void *arg ) {
       decodeBase64(req.credentials);
       DBG("username:password: %s\n", req.credentials);
     }
-
+    
   } while( cnt > 2 && !(buffer[0] == '\r' && buffer[1] == '\n') );
-
+  
   /* check for username and password if parameter -c was given */
   if ( lcfd.pc->conf.credentials != NULL ) {
     if ( req.credentials == NULL || strcmp(lcfd.pc->conf.credentials, req.credentials) != 0 ) {
@@ -665,39 +698,39 @@ void* HTTPD::client_thread( void *arg ) {
     }
     DBG("access granted\n");
   }
-
+  
   ClientRequest = true;
-
+  
   /* now it's time to answer */
   switch ( req.type ) {
-    case A_SNAPSHOT:
+  case A_SNAPSHOT:
       DBG("Request for snapshot\n");
       send_snapshot(lcfd.fd);
       break;
-    case A_STREAM:
-      DBG("Request for stream\n");
-      send_stream(lcfd.fd);	  
+  case A_STREAM:
+    DBG("Request for stream\n");
+    send_stream(lcfd.fd);	  
+    break;
+  case A_COMMAND:
+    if ( lcfd.pc->conf.nocommands ) {
+      send_error(lcfd.fd, 501, "this server is configured to not accept commands");
       break;
-    case A_COMMAND:
-      if ( lcfd.pc->conf.nocommands ) {
-        send_error(lcfd.fd, 501, "this server is configured to not accept commands");
-        break;
-      }
-      ParseCommand(lcfd.fd, req.parameter);
-      break;
-    case A_FILE:
-      if ( lcfd.pc->conf.docroot == NULL )
-        send_error(lcfd.fd, 501, "no www-folder configured");
-      else
-	    send_file(lcfd.fd, req.parameter);
-	  break;
-    default:
-      DBG("unknown request\n");
+    }
+    ParseCommand(lcfd.fd, req.parameter);
+    break;
+  case A_FILE:
+    if ( lcfd.pc->conf.docroot == NULL )
+      send_error(lcfd.fd, 501, "no www-folder configured");
+    else
+      send_file(lcfd.fd, req.parameter);
+    break;
+  default:
+    DBG("unknown request\n");
   }
-
+  
   close(lcfd.fd);
   free_request(&req);
-
+  
   DBG("leaving HTTP client thread\n");
   return NULL;
 }
@@ -756,7 +789,7 @@ HTTPD::server_thread( void *arg )
   memset(&addr, 0, sizeof(addr));
 
   addr.sin_family = AF_INET;
-  addr.sin_port = server->conf.http_port; /* is already in right byteorder */
+  addr.sin_port = htons( server->conf.http_port ); /* is already in right byteorder */
   int e = inet_pton(AF_INET, server->conf.http_addr, & addr.sin_addr );
 
   if ( e <= 0 )

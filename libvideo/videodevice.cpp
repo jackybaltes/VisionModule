@@ -31,15 +31,21 @@ VideoDevice::getError( void ) const
 }
 
 int 
-VideoDevice::getWidth( void ) const
+VideoDevice::GetWidth( void ) const
 {
   return width;
 }
 
 int 
-VideoDevice::getHeight( void ) const
+VideoDevice::GetHeight( void ) const
 {
   return height;
+}
+
+unsigned int 
+VideoDevice::GetDepth( void ) const
+{
+  return depth;
 }
 
 bool 
@@ -106,4 +112,10 @@ int
 VideoDevice::SetGain( unsigned int val )
 {
   return -1;
+}
+
+std::string
+VideoDevice::GetDeviceName( void ) const
+{
+  return devname;
 }

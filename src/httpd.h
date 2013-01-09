@@ -1,24 +1,6 @@
-/*******************************************************************************
-#                                                                              #
-#      MJPG-streamer allows to stream JPG frames from an input-plugin          #
-#      to several output plugins                                               #
-#                                                                              #
-#      Copyright (C) 2007 Tom Stöveken                                         #
-#                                                                              #
-# This program is free software; you can redistribute it and/or modify         #
-# it under the terms of the GNU General Public License as published by         #
-# the Free Software Foundation; version 2 of the License.                      #
-#                                                                              #
-# This program is distributed in the hope that it will be useful,              #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of               #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                #
-# GNU General Public License for more details.                                 #
-#                                                                              #
-# You should have received a copy of the GNU General Public License            #
-# along with this program; if not, write to the Free Software                  #
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA    #
-#                                                                              #
-*******************************************************************************/
+/**
+ * Jacky Baltes <jacky@cs.umanitoba.ca> Tue Jan  8 22:55:42 CST 2013
+ */
 
 #ifndef __HTTPD_H__
 #define __HTTPD_H__
@@ -150,7 +132,7 @@ typedef struct {
                    "Server: VisionModule/1.0\r\n" \
                    "Cache-Control: no-store, no-cache, must-revalidate, pre-check=0, post-check=0, max-age=0\r\n" \
                    "Pragma: no-cache\r\n" \
-                   "Expires: Mon, 3 Jan 2000 12:34:56 GMT\r\n"
+                   "Expires: Mon, 1 Jan 2000 12:00:00 GMT\r\n"
 
 /*
  * Only the following fileypes are supported.
@@ -167,6 +149,7 @@ static const struct {
   { ".css",  "text/css" },
   { ".js",   "text/javascript" },
   { ".txt",  "text/plain" },
+  { ".cfg",  "text/plain" },
   { ".jpg",  "image/jpeg" },
   { ".jpeg", "image/jpeg" },
   { ".png",  "image/png"},

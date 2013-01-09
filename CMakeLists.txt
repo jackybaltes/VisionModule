@@ -32,6 +32,7 @@ ADD_EXECUTABLE( vision_module
   src/httpd.cpp
   src/jpeg_utils.cpp
   src/serial.cpp
+  src/configuration.cpp
 )
 
 ADD_DEFINITIONS(

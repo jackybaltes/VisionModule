@@ -24,8 +24,6 @@
 #   include "../libvideo/v4l2device.h"
 #endif
 
-#include "videostream.h"
-
 #ifdef DEBUG
 #include <iostream>
 using namespace std;
@@ -37,6 +35,7 @@ using namespace std;
 #include "videostream.h"
 #include "jpeg_utils.h"
 #include "httpd.h"
+#include "configuration.h"
 
 #include "../libvideo/framebuffer.h"
 #include "../libvideo/framebufferrgb24.h"
@@ -71,7 +70,7 @@ VideoStream::VideoStream(string driver,
 			 unsigned int height,
 			 unsigned int depth,
 			 unsigned int numBuffers,
-			 unsigned int subSample,
+			 unsigned int subsample,
 			 int brightness,
 			 int contrast,
 			 int saturation,
@@ -80,7 +79,7 @@ VideoStream::VideoStream(string driver,
 			 )
   : done( true ),
     mode( VideoStream::Raw ),
-    subSample( subSample )
+    subsample( subsample )
 {
   if (0)
     {
@@ -176,7 +175,7 @@ VideoStream::run( )
 	      nextColours = 0;
 	    }
 	  
-	  ProcessFrame( mode, cameraFrame, outFrame, subSample, colours, mark );
+	  ProcessFrame( mode, cameraFrame, outFrame, subsample, colours, mark );
 	}
       device->releaseCurrentBuffer();
       sendImage( outFrame );
@@ -193,7 +192,7 @@ void
 VideoStream::ProcessFrame( enum ProcessType ptype, 
 			   FrameBuffer * frame, 
 			   FrameBuffer * outFrame, 
-			   unsigned int subSample, 
+			   unsigned int subsample, 
 			   std::vector<ColourDefinition> colours,
 			   RawPixel mark
 			   )
@@ -202,7 +201,7 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
   
   if ( (  ptype == Raw ) || ( ptype == ShowColours ) )
     {
-      ImageProcessing::convertBuffer( frame, outFrame, subSample );
+      ImageProcessing::convertBuffer( frame, outFrame, subsample );
     }
 
   if ( ptype == ShowColours )
@@ -213,7 +212,7 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
 	    {
 	      ImageProcessing::swapColours( outFrame, 0,
 					    Rect( Point(0,0), Point(outFrame->width, outFrame->height) ), 
-					    subSample,
+					    subsample,
 					    colours[i], 
 					    mark );
 	    }
@@ -229,7 +228,7 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
 
 	  ImageProcessing::SegmentColours( frame, outFrame,
 					   50,5,10,
-					   subSample,
+					   subsample,
 					   colours[i], 
 					   mark,
 					   results );
@@ -260,7 +259,7 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
 	      
   if ( ptype == Scanlines )
     {
-      //      ImageProcessing::segmentScanLines( frame, outFrame, threshold, minimumLineLength, maximumLineLength, minimumSize, mark, subSample, 0 );
+      //      ImageProcessing::segmentScanLines( frame, outFrame, threshold, minimumLineLength, maximumLineLength, minimumSize, mark, subsample, 0 );
     }
   
   if ( ptype == Segmentation )
@@ -268,7 +267,7 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
       //ColourDefinition target;
       //    getColourDefinition( & target );
       
-      //ImageProcessing::segmentScanLines( frame, outFrame, threshold, minimumLineLength, maximumLineLength, minimumSize, mark, subSample, & target );
+      //ImageProcessing::segmentScanLines( frame, outFrame, threshold, minimumLineLength, maximumLineLength, minimumSize, mark, subsample, & target );
     }
 }
 
@@ -1003,4 +1002,59 @@ void
 VideoStream::SetColours( std::vector<ColourDefinition> colours )
 {
   this->colours = colours;
+}
+
+std::string
+VideoStream::ReadRunningConfiguration( void ) const
+{
+  Configuration config;
+  
+  // General options
+  config.subsample = GetSubsample();
+  
+  // Camera options
+  config.device_video = device->GetDeviceName();
+  
+  if ( device != 0 )
+    {
+      config.width = device->GetWidth();
+      config.height = device->GetHeight();
+      config.depth = device->GetDepth();
+      config.brightness = device->GetBrightness();
+      config.contrast = device->GetContrast();
+      config.saturation = device->GetSaturation();
+      config.sharpness = device->GetSharpness();
+      config.gain = device->GetGain();
+    }
+  
+  // HTTP options
+  config.http_port = server.conf.http_port; 
+  config.http_addr = server.conf.http_addr;
+  config.docroot = server.conf.docroot;
+  config.index = server.conf.index;
+  
+  // Colour options still missing
+  
+  // Serial options
+  if ( server.conf.serial != 0 )
+    {
+      config.device_serial = server.conf.serial->GetDeviceName();
+      config.baudrate = Serial::ConvertBaudrateToString( server.conf.serial->GetBaudrate() );
+    }
+
+  std::stringstream os;
+  os << config;
+  return os.str();
+}
+
+unsigned int
+VideoStream::GetSubsample( void ) const 
+{
+  return subsample;
+}
+
+void
+VideoStream::SetSubsample( unsigned int subsample )
+{
+  this->subsample = subsample;
 }

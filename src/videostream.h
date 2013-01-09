@@ -21,7 +21,7 @@ class FrameBuffer;
 class VideoDevice;
 class ColourDefinition;
 class RawPixel;
-
+class Configuration;
 
 class VideoStream
 {
@@ -55,7 +55,7 @@ public:
 	      unsigned int height,
 	      unsigned int depth,
 	      unsigned int numBuffers,
-	      unsigned int subSample,
+	      unsigned int subsample,
 	      int brightness,
 	      int contrast,
 	      int saturation,
@@ -91,7 +91,7 @@ public:
   void ProcessFrame( enum ProcessType ptype, 
 		     FrameBuffer * frame, 
 		     FrameBuffer * outFrame, 
-		     unsigned int subSample, 
+		     unsigned int subsample, 
 		     std::vector<ColourDefinition> colours, 
 		     RawPixel mark );
 
@@ -136,8 +136,15 @@ public:
  public:
   std::vector<ColourDefinition> * nextColours;
 
+ private:
+  unsigned int subsample;
+
  public:
-  unsigned int subSample;
+  unsigned int GetSubsample( void ) const;
+  void SetSubsample( unsigned int subsample );
+
+ public:
+  std::string ReadRunningConfiguration( void ) const;
 
  private:
   std::string GetColourList( void );
