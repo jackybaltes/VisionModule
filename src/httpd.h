@@ -91,7 +91,7 @@ typedef struct {
 
 
 /* the webserver determines between these values for an answer */
-typedef enum { A_UNKNOWN, A_SNAPSHOT, A_STREAM, A_COMMAND, A_FILE } answer_t;
+typedef enum { A_UNKNOWN, A_SNAPSHOT, A_STREAM, A_COMMAND, A_FILE, P_FILE } answer_t;
 
 /*
  * the client sends information with each request
@@ -102,6 +102,7 @@ typedef struct {
   char *parameter;
   char *client;
   char *credentials;
+  size_t content_length;
 } request;
 
 /* the iobuffer structure is used to read from the HTTP-client */
@@ -174,7 +175,8 @@ private:
     static void decodeBase64(char *data);
     static void send_snapshot(int fd);
     static void send_stream(int fd);
-    static void send_file(int fd, char const * parameter);
+    static void SendFile(int fd, char const * parameter);
+    static void ReceiveFile( int fd, iobuffer * iobuf, char const * parameter, size_t length );
     static void ParseCommand(int fd, char const * parameter);
     //static void input_cmd(in_cmd_type cmd, float value, char* res_str);
     static void server_cleanup(void *arg);

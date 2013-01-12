@@ -82,52 +82,60 @@ Return Value: * buffer.: will become filled with bytes read
               * iobuf..: May get altered to save the context for future calls.
               * func().: bytes copied to buffer or -1 in case of error
 ******************************************************************************/
-int HTTPD::_read(int fd, iobuffer *iobuf, void *buffer, size_t len, int timeout) {
+int 
+HTTPD::_read(int fd, iobuffer *iobuf, void *buffer, size_t len, int timeout) 
+{
   int copied=0, rc, i;
   fd_set fds;
   struct timeval tv;
 
   memset(buffer, 0, len);
 
-  while ( (copied < (int)len) ) {
-    i = MIN(iobuf->level, (int)len-copied);
-    memcpy(static_cast<void *>( static_cast<uint8_t *>(buffer)+copied), iobuf->buffer+IO_BUFFER-iobuf->level, i);
+  while ( (copied < (int)len) ) 
+    {
+      i = MIN(iobuf->level, (int)len-copied);
+      memcpy(static_cast<void *>( static_cast<uint8_t *>(buffer)+copied), iobuf->buffer+IO_BUFFER-iobuf->level, i);
+      
+      iobuf->level -= i;
+      copied += i;
+      if ( copied >= len )
+	{
+	  return copied;
+	}
 
-    iobuf->level -= i;
-    copied += i;
-    if ( copied >= len )
-      return copied;
+      /* select will return in case of timeout or new data arrived */
+      tv.tv_sec = timeout;
+      tv.tv_usec = 0;
+      FD_ZERO(&fds);
+      FD_SET(fd, &fds);
+      if ( (rc = select(fd+1, &fds, NULL, NULL, &tv)) <= 0 ) 
+	{
+	  if ( rc < 0)
+	    {
+	      exit(EXIT_FAILURE);
+	    }
 
-    /* select will return in case of timeout or new data arrived */
-    tv.tv_sec = timeout;
-    tv.tv_usec = 0;
-    FD_ZERO(&fds);
-    FD_SET(fd, &fds);
-    if ( (rc = select(fd+1, &fds, NULL, NULL, &tv)) <= 0 ) {
-      if ( rc < 0)
-        exit(EXIT_FAILURE);
+	  /* this must be a timeout */
+	  return copied;
+	}
 
-      /* this must be a timeout */
-      return copied;
+      init_iobuffer(iobuf);
+      
+      /*
+       * there should be at least one byte, because select signalled it.
+       * But: It may happen (very seldomly), that the socket gets closed remotly between
+       * the select() and the following read. That is the reason for not relying
+       * on reading at least one byte.
+       */
+      if ( (iobuf->level = read(fd, &iobuf->buffer, IO_BUFFER)) <= 0 ) 
+	{
+	  /* an error occured */
+	  return -1;
+	}
+
+      /* align data to the end of the buffer if less than IO_BUFFER bytes were read */
+      memmove(iobuf->buffer+(IO_BUFFER-iobuf->level), iobuf->buffer, iobuf->level);
     }
-
-    init_iobuffer(iobuf);
-
-    /*
-     * there should be at least one byte, because select signalled it.
-     * But: It may happen (very seldomly), that the socket gets closed remotly between
-     * the select() and the following read. That is the reason for not relying
-     * on reading at least one byte.
-     */
-    if ( (iobuf->level = read(fd, &iobuf->buffer, IO_BUFFER)) <= 0 ) {
-      /* an error occured */
-      return -1;
-    }
-
-    /* align data to the end of the buffer if less than IO_BUFFER bytes were read */
-    memmove(iobuf->buffer+(IO_BUFFER-iobuf->level), iobuf->buffer, iobuf->level);
-  }
-
   return 0;
 }
 
@@ -148,19 +156,22 @@ Return Value: * buffer.: will become filled with bytes read
               * func().: bytes copied to buffer or -1 in case of error
 ******************************************************************************/
 /* read just a single line or timeout */
-int HTTPD::_readline(int fd, iobuffer *iobuf, void *buffer, size_t len, int timeout) {
+int 
+HTTPD::_readline(int fd, iobuffer *iobuf, void *buffer, size_t len, int timeout) {
   char c='\0', *out=(char*)buffer;
   int i;
 
   memset(buffer, 0, len);
 
-  for ( i=0; i<len && c != '\n'; i++ ) {
-    if ( _read(fd, iobuf, &c, 1, timeout) <= 0 ) {
-      /* timeout or error occured */
-      return -1;
+  for ( i=0; ( i<len ) && ( c != '\n'); i++ ) 
+    {
+      if ( _read(fd, iobuf, &c, 1, timeout) <= 0 ) 
+	{
+	  /* timeout or error occured */
+	  return -1;
+	}
+      *out++ = c;
     }
-    *out++ = c;
-  }
 
   return i;
 }
@@ -391,7 +402,8 @@ Input Value.: * fd.......: filedescriptor to send data to
               * id.......: specifies which server-context is the right one
 Return Value: -
 ******************************************************************************/
-void HTTPD::send_file(int fd, char const * parameter) 
+void 
+HTTPD::SendFile(int fd, char const * parameter) 
 {
   char buffer[BUFFER_SIZE] = {0};
   char const * extension, *mimetype=NULL;
@@ -556,6 +568,90 @@ HTTPD::ParseCommand(int fd, char const * parameter)
   //  if (ccommand != NULL) free(command);
 }
 
+void 
+HTTPD::ReceiveFile(int fd, iobuffer * iobuf, char const * parameter, size_t length ) 
+{
+  char content[256];
+  char mark[80];
+
+  DBG("Receiving file %s of size %d", parameter, length );
+
+  /* build the absolute path to the file */
+  config conf = server->conf;    
+  char buffer[BUFFER_SIZE] = {0};
+  strncat(buffer, conf.docroot, sizeof(buffer)-1);
+  strncat(buffer, parameter, sizeof(buffer)-strlen(buffer)-1);
+
+  int lfd;
+  if ( (lfd = open(buffer, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR|S_IWUSR )) < 0 ) 
+    {
+      DBG("file %s not writeable\n", buffer);
+      send_error(fd, 404, "Could not open file");
+      return;
+    }
+  
+  int total = 0;
+  int in;
+  unsigned int row = 0;
+  mark[0] = '\0';
+  int doWrite;
+  int header = 1;
+
+  while( total < length )
+    {
+      int rem = MIN( sizeof(content) - 1, length - total );
+      doWrite = 1;
+      if( ( in = _readline(fd, iobuf, content, rem, 5) ) > 0 )
+	{	  
+	  if ( ( row == 0 ) && ( !strncmp("-----------------------------", content, strlen("-----------------------------") ) ) ) 
+	    {
+	      strncpy( mark, content, in );
+	      mark[in-2] = '-';
+	      mark[in-1] = '-';
+	      mark[in] = '\r';
+	      mark[in+1] = '\n';
+
+	      doWrite = 0;
+	    }
+	  
+	  if ( ( header ) && ( ! strcmp(content,"\r\n") ) )
+	    {
+	      header = 0;
+	    }
+	  total = total + in;
+
+	  if ( ( total == length ) && ( !strncmp( content, mark, strlen( mark ) ) ) )
+	    {
+	      doWrite = 0;
+	    }
+
+	  if ( ( doWrite ) && ( ! header ) )
+	    {
+	      int left = in;
+	      int done = 0;
+	      
+	      while( left > 0 ) 
+		{
+		  int out = write(lfd, content + done, left);
+		  if ( out < 0 )
+		    {
+		      close(lfd);
+		      send_error(fd, 404, "Could not write file");
+		      return;
+		    }
+		  done = done + out;
+		  left = left - done;
+		}
+	    }
+	  row++;
+	}
+    }
+  DBG("Read and saved %d bytes\n", total );
+
+  close(lfd);
+}
+
+
 /******************************************************************************
 Description.: Serve a connected TCP-client. This thread function is called
               for each connect of a HTTP client like a webbrowser. It determines
@@ -567,14 +663,16 @@ Input Value.: arg is the filedescriptor and server-context of the connected TCP
 Return Value: always NULL
 ******************************************************************************/
 /* thread for clients that connected to this server */
-void* HTTPD::client_thread( void *arg ) 
+void * 
+HTTPD::client_thread( void *arg ) 
 {
   int cnt;
   char buffer[BUFFER_SIZE]={0}, *pb=buffer;
   iobuffer iobuf;
   request req;
   cfd lcfd; /* local-connected-file-descriptor */
-  
+  char const * s;
+
   /* we really need the fildescriptor and it must be freeable by us */
   if (arg != NULL) 
     {
@@ -632,10 +730,30 @@ void* HTTPD::client_thread( void *arg )
       
       DBG("command parameter (len: %d): \"%s\"\n", len, req.parameter);
     }
-  else 
+  else if (strstr(buffer, "POST " ) != NULL ) 
     {
-      int len;
-      
+      DBG("receiving file\n");
+      req.type = P_FILE;
+      if ( ( pb = strstr(buffer, "POST /") ) == NULL ) 
+	{
+	  DBG("HTTP request seems to be malformed\n");
+	  send_error(lcfd.fd, 400, "Malformed HTTP request");
+	  close(lcfd.fd);
+	  return NULL;
+	}
+      pb += strlen("POST /");
+      size_t len = MIN(MAX(strspn(pb, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ._-1234567890"), 0), 100);
+      req.parameter = (char*)malloc(len+1);
+      if ( req.parameter == NULL ) 
+	{
+	  exit(EXIT_FAILURE);
+	}
+    
+      memset(req.parameter, 0, len+1);
+      strncpy(req.parameter, pb, len);
+    }
+  else if (strstr(buffer, "GET " ) != NULL )  
+    {
       DBG("try to serve a file\n");
       req.type = A_FILE;
       
@@ -648,7 +766,7 @@ void* HTTPD::client_thread( void *arg )
 	}
       
       pb += strlen("GET /");
-      len = MIN(MAX(strspn(pb, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ._-1234567890"), 0), 100);
+      size_t len = MIN(MAX(strspn(pb, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ._-1234567890"), 0), 100);
       req.parameter = (char*)malloc(len+1);
       if ( req.parameter == NULL ) 
 	{
@@ -674,14 +792,21 @@ void* HTTPD::client_thread( void *arg )
 	return NULL;
       }
     
-    if ( strstr(buffer, "User-Agent: ") != NULL ) {
-      req.client = strdup(buffer+strlen("User-Agent: "));
-    }
-    else if ( strstr(buffer, "Authorization: Basic ") != NULL ) {
-      req.credentials = strdup(buffer+strlen("Authorization: Basic "));
-      decodeBase64(req.credentials);
-      DBG("username:password: %s\n", req.credentials);
-    }
+    if ( strstr(buffer, "User-Agent: ") != NULL ) 
+      {
+	req.client = strdup(buffer+strlen("User-Agent: "));
+      }
+    else if ( strstr(buffer, "Authorization: Basic ") != NULL ) 
+      {
+	req.credentials = strdup(buffer+strlen("Authorization: Basic "));
+	decodeBase64(req.credentials);
+	DBG("username:password: %s\n", req.credentials);
+      } 
+    else if ( ( s = strstr( buffer, "Content-Length: " ) ) != NULL ) 
+      {
+	s = s + strlen("Content-Length: ");
+	req.content_length = atoi(s);
+      }
     
   } while( cnt > 2 && !(buffer[0] == '\r' && buffer[1] == '\n') );
   
@@ -720,10 +845,24 @@ void* HTTPD::client_thread( void *arg )
     break;
   case A_FILE:
     if ( lcfd.pc->conf.docroot == NULL )
-      send_error(lcfd.fd, 501, "no www-folder configured");
+      {
+	send_error(lcfd.fd, 501, "no www-folder configured");
+      }
     else
-      send_file(lcfd.fd, req.parameter);
+      {
+	SendFile(lcfd.fd, req.parameter);
+      }
     break;
+  case P_FILE:
+    if ( lcfd.pc->conf.docroot == NULL )
+      {
+	send_error(lcfd.fd, 501, "no www-folder configured");
+      }
+    else
+      {
+	ReceiveFile(lcfd.fd, & iobuf, req.parameter, req.content_length);
+      }
+    break;    
   default:
     DBG("unknown request\n");
   }

@@ -1005,7 +1005,7 @@ VideoStream::SetColours( std::vector<ColourDefinition> colours )
 }
 
 std::string
-VideoStream::ReadRunningConfiguration( void ) const
+VideoStream::ReadRunningConfiguration( void ) 
 {
   Configuration config;
   
@@ -1032,9 +1032,16 @@ VideoStream::ReadRunningConfiguration( void ) const
   config.http_addr = server.conf.http_addr;
   config.docroot = server.conf.docroot;
   config.index = server.conf.index;
-  
-  // Colour options still missing
-  
+
+  // Colour options
+  config.colours.clear();
+
+  for( vector<ColourDefinition>::iterator i = this->colours.begin();
+       i != this->colours.end();
+       ++i)
+    {
+      config.colours.push_back( (*i).ToString() );
+    }
   // Serial options
   if ( server.conf.serial != 0 )
     {

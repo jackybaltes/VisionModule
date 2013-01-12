@@ -144,7 +144,7 @@ public:
   void SetSubsample( unsigned int subsample );
 
  public:
-  std::string ReadRunningConfiguration( void ) const;
+  std::string ReadRunningConfiguration( void );
 
  private:
   std::string GetColourList( void );

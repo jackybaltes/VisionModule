@@ -14,6 +14,7 @@ class ColourDefinition
   ~ColourDefinition();
   ColourDefinition(const ColourDefinition & rhs);
   ColourDefinition & operator=(const ColourDefinition & rhs);
+  std::string ToString( void ) const;
 
   void reset();
   void addPixel(const Pixel & p);

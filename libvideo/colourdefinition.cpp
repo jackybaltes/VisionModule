@@ -3,6 +3,7 @@
 #include <fstream>
 #include <locale>
 #include <vector>
+#include <sstream>
 
 ColourDefinition::ColourDefinition() :
   name(""),
@@ -170,6 +171,15 @@ ColourDefinition::isMatch(const Pixel & p) const
          true;
 }
 
+
+std::string
+ColourDefinition::ToString( void ) const
+{
+  std::stringstream s;
+
+  s << (*this);
+  return s.str();
+}
 
 std::ostream & 
 operator<<(std::ostream & os, ColourDefinition const & cd)

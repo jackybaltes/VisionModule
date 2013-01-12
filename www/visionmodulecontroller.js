@@ -94,6 +94,13 @@ function AJAX_get(req,url) {
     req.send(null);
 }
 
+function AJAX_put(req, url, file) {
+    req.open("POST", url, true);
+    var fd = new FormData();
+    fd.append(url,file);
+    req.send(fd);
+}
+
 function SendCommand(cmd) {
     document.getElementById('hints').firstChild.nodeValue = "Send command: " + cmd;
     req = AJAX_init();
@@ -513,7 +520,7 @@ function ResponseColour( text ) {
 }
 
 function ResponseColourList( text ) {
-    colours = TextToColourList( text );
+    var colours = TextToColourList( text );
     UpdateColourSelection( colours );
 }
 
@@ -622,6 +629,34 @@ function OnClickDeleteColour( ) {
     SendCommand("deletecolour" + "&" + "name=" + colourNameSelector.value );
 }
 
-function LoadConfiguration( ) {
-    window.open( "../vision_module_test.cfg", "Download Configuration" );
+function DownloadConfiguration( ) {
+    window.open( "__config__.cfg", "Download Configuration" );
+}
+
+function UploadConfiguration( inp ) {
+    if ( inp.files.length == 1 ) {
+	var file = inp.files[0];
+
+	var xhr = new XMLHttpRequest();
+	xhr.file = file; // not necessary if you create scopes like this
+	xhr.addEventListener('progress', function(e) {
+            var done = e.position || e.loaded, total = e.totalSize || e.total;
+            console.log('xhr progress: ' + (Math.floor(done/total*1000)/10) + '%');
+	}, false);
+	
+	if ( xhr.upload ) {
+            xhr.upload.onprogress = function(e) {
+		var done = e.position || e.loaded, total = e.totalSize || e.total;
+		console.log('xhr.upload progress: ' + done + ' / ' + total + ' = ' + (Math.floor(done/total*1000)/10) + '%');
+            };
+	}
+	
+	xhr.onreadystatechange = function(e) {
+            if ( 4 == this.readyState ) {
+		console.log(['xhr upload complete', e]);
+            }
+	};
+
+	AJAX_put( xhr, '/__config__.cfg', file );
+    }
 }

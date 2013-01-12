@@ -52,11 +52,11 @@ rel="stylesheet">
 
       <br>
 
-      <button value="Load Configuration" name="loadconfiguration" type="button" onclick="LoadConfiguration()">Load
-Configuration</button><br>
+      <button value="Download Configuration" name="downloadconfiguration" type="button" onclick="DownloadConfiguration()">Download Configuration</button><br>
 
-      <button value="Save Configuration" name="saveconfiguration" type="button">Save
-Configuration</button><br>
+      <input value="Upload Configuration" name="uploadconfiguration" type="file" onchange="UploadConfiguration( this )"><br>
+      <p></p>
+      <button value="Freeze Configuration" name="freezeconfiguration" type="button">Freeze Configuration</button><br>
 
       <p></p>
 
@@ -64,7 +64,10 @@ Configuration</button><br>
 Colour </button>
       <p></p>
 
-      <button id="pauseplayButtonButton" value="Pause" name="pauseplay" onclick="onclickPausePlayButton(this)" type="button">Pause</button>  
+      <button id="pauseplayButton" value="Pause" name="pauseplay" onclick="onclickPausePlayButton(this)" type="button">Pause</button>  
+
+      <p></p>
+      <button id="shutdownButton" value="Shutdown" name="shutdown" type="button">Shutdown</button>  
       </td>
 
     </tr>

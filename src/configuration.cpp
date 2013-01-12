@@ -5,6 +5,7 @@
  */
 
 #include "configuration.h"
+#include "../libvideo/colourdefinition.h"
 
 std::ostream & 
 operator<<(std::ostream & os, Configuration const & config )
@@ -32,6 +33,14 @@ operator<<(std::ostream & os, Configuration const & config )
      << "index" << " = " << config.index << "\r\n";
   os << "\r\n";
 
+  // Colours
+  for( vector<string>::const_iterator i = config.colours.begin();
+       i != config.colours.end();
+       ++i)
+    {
+      string const t = (*i);
+      os << "colour" << "=" << t << "\r\n";
+    }
   // Serial options
   if ( config.device_serial != "" )
     {
