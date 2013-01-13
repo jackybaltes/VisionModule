@@ -27,8 +27,6 @@ main( int argc, char ** argv )
 
   int bayer = 0;
 
-  Configuration configuration;
-
   try 
     {
       // Declare a group of options that will be 
@@ -37,58 +35,54 @@ main( int argc, char ** argv )
       commandLineOnlyOptions.add_options()
 	("version,v", "print version string")
 	("help", "produce help message")    
-	("config,c", po::value<string>( & config_file )->default_value("vision_module.cfg"), "config file name")
+	("config,c", po::value<string>( & config_file )->default_value(""), "config file name")
 	;
-      unsigned int subsample;
+
       po::options_description generalOptions("General Options");
       generalOptions.add_options()
-	("subsample", po::value<unsigned int>( & configuration.subsample )->default_value(1),"sub sample")
+	("subsample", po::value<unsigned int>( )->default_value(1),"sub sample")
 	;
 
       po::options_description cameraOptions("Camera Options");
       cameraOptions.add_options()
-	("video_device,d", po::value<string>(& configuration.device_video)->default_value("/dev/video0"), "video device name")
-	("width,w", po::value<unsigned int>( & configuration.width )->default_value(320),"width")
-	("height,h", po::value<unsigned int>( & configuration.height )->default_value(240),"height")
-	("depth", po::value<unsigned int>( & configuration.depth )->default_value(24),"depth")
-	("brightness", po::value<int> ( & configuration.brightness )->default_value(-1),"brightness")
-	("contrast", po::value<int> ( & configuration.contrast )->default_value(-1),"contrast")
-	("saturation", po::value<int> ( & configuration.saturation )->default_value(-1),"saturation")
-	("sharpness", po::value<int> ( & configuration.sharpness )->default_value(-1),"sharpness")
-	("gain", po::value<int> ( & configuration.gain )->default_value(-1),"gain")
+	("video_device,d", po::value<string>( )->default_value("/dev/video0"), "video device name")
+	("width,w", po::value<unsigned int>( )->default_value(320),"width")
+	("height,h", po::value<unsigned int>( )->default_value(240),"height")
+	("depth", po::value<unsigned int>( )->default_value(24),"depth")
+	("brightness", po::value<int> ( )->default_value(-1),"brightness")
+	("contrast", po::value<int> ( )->default_value(-1),"contrast")
+	("saturation", po::value<int> ( )->default_value(-1),"saturation")
+	("sharpness", po::value<int> ( )->default_value(-1),"sharpness")
+	("gain", po::value<int> ( )->default_value(-1),"gain")
 	;
 
       po::options_description httpOptions("Http Server Options");
       httpOptions.add_options()
-	("http-port", po::value<unsigned int>( & configuration.http_port )->default_value(8080)->required(),"http port number")
-	("http-addr", po::value<string>(& configuration.http_addr)->default_value("0.0.0.0")->required(),"http address")
-	("docroot", po::value<string>(& configuration.docroot)->default_value("www/")->required(),"http document root")
-	("index", po::value<string>(& configuration.index)->default_value("index.html"),"index.html file name")
+	("http_port", po::value<unsigned int>( )->default_value(8080)->required(),"http port number")
+	("http_addr", po::value<string>( )->default_value("0.0.0.0")->required(),"http address")
+	("docroot", po::value<string>( )->default_value("www/")->required(),"http document root")
+	("index", po::value<string>( )->default_value("index.html"),"index.html file name")
 	;
         
       po::options_description colourOptions("General Options");
       colourOptions.add_options()
-	("colour", po::value<vector<string> >( & configuration.colours),"colour definition")
+	("colour", po::value<vector<string> >( ),"colour definition")
       ;
       
       po::options_description serialOptions("Serial Port Options");
       serialOptions.add_options()
-	("serial_device", po::value<string>( & configuration.device_serial )->default_value(""),"serial device name or empty for no serial port output")
-	("baudrate", po::value<string>(& configuration.baudrate)->default_value("B115200"),"baudrate");
+	("serial_device", po::value<string>( )->default_value(""),"serial device name or empty for no serial port output")
+	("baudrate", po::value<string>( )->default_value("B115200"),"baudrate");
 
       po::options_description commandLineOptions;
       commandLineOptions.add(commandLineOnlyOptions).add(generalOptions).add(cameraOptions).add(httpOptions).add(colourOptions).add(serialOptions)
 	;
 
-      po::variables_map vm;
-      po::store(po::parse_command_line(argc,argv,commandLineOptions),vm);
-      po::notify(vm);
-
       po::options_description configFileOptions;
       configFileOptions.add(generalOptions).add(cameraOptions).add(httpOptions).add(colourOptions).add(serialOptions);
 
-      ifstream ifs( config_file.c_str() );
-      po::store(po::parse_config_file(ifs, configFileOptions), vm );
+      po::variables_map vm;
+      po::store(po::parse_command_line(argc,argv,commandLineOptions),vm);
       po::notify(vm);
 
       if ( vm.count("help") )
@@ -103,6 +97,17 @@ main( int argc, char ** argv )
 	  return 1;
 	}
 
+      if ( config_file != "" ) 
+	{
+	  ifstream ifs( config_file.c_str() );
+	  
+	  po::store(po::parse_config_file(ifs, configFileOptions), vm );
+	  po::notify(vm);
+	}
+
+      Configuration configuration( vm );
+
+      std::cout << configuration;
       ApplyConfiguration( configuration );
     }
   catch( exception & e )
@@ -209,7 +214,6 @@ ApplyConfiguration( Configuration & configuration )
 	  serial = 0;
 	}
     }
-
 
   video->server.pglobal = & VideoStream::global;
   video->server.conf.http_port = configuration.http_port;

@@ -6,6 +6,53 @@
 
 #include "configuration.h"
 #include "../libvideo/colourdefinition.h"
+#include <boost/program_options.hpp>
+
+namespace po = boost::program_options;
+
+Configuration::Configuration( )
+{
+}
+
+//Configuration::Configuration( std::string configStr )
+//{
+//  
+//}
+
+Configuration::Configuration( po::variables_map const & vm )
+{
+  // General options
+  subsample = vm["subsample"].as<unsigned int>();
+
+  // Camera options
+  device_video = vm["video_device"].as<std::string>();
+  width = vm["width"].as<unsigned int>();
+  height = vm["height"].as<unsigned int>();
+  depth = vm["depth"].as<unsigned int>();
+
+  brightness = vm["brightness"].as<int>();
+  contrast = vm["contrast"].as<int>();
+  saturation = vm["saturation"].as<int>();
+  sharpness = vm["sharpness"].as<int>();
+  gain = vm["gain"].as<int>();
+
+  // HTTPD options
+  http_port = vm["http_port"].as<unsigned int>();
+  http_addr = vm["http_addr"].as<std::string>();
+  docroot = vm["docroot"].as<std::string>();
+  index = vm["index"].as<std::string>();
+
+  // Colour options
+  if ( vm.count("colour") > 0 ) 
+    {
+      colours = vm["colour"].as<std::vector<string> >();
+    }
+
+  // Serial options
+  device_serial = vm["serial_device"].as<std::string>();
+  baudrate = vm["baudrate"].as<std::string>();
+}
+      
 
 std::ostream & 
 operator<<(std::ostream & os, Configuration const & config )

@@ -10,11 +10,17 @@
 #include <string>
 #include <vector>
 #include <ostream>
+#include <boost/program_options.hpp>
 
 using namespace std;
+namespace po = boost::program_options;
 
 class Configuration 
 {
+ public:
+  Configuration( );
+  Configuration( po::variables_map const & vm );
+
  public:
   // General options
   unsigned int subsample;

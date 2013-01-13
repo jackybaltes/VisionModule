@@ -3,6 +3,8 @@
  */
 
 
+#include <ostream>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <cstdlib>
@@ -573,21 +575,32 @@ HTTPD::ReceiveFile(int fd, iobuffer * iobuf, char const * parameter, size_t leng
 {
   char content[256];
   char mark[80];
+  config conf = server->conf;    
+  std::ostream * os;
+  std::stringstream oss;
+  std::ofstream ofile;
 
   DBG("Receiving file %s of size %d", parameter, length );
 
-  /* build the absolute path to the file */
-  config conf = server->conf;    
-  char buffer[BUFFER_SIZE] = {0};
-  strncat(buffer, conf.docroot, sizeof(buffer)-1);
-  strncat(buffer, parameter, sizeof(buffer)-strlen(buffer)-1);
-
-  int lfd;
-  if ( (lfd = open(buffer, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR|S_IWUSR )) < 0 ) 
+  if ( !strcmp( parameter, "__no_config__.cfg" ) )
     {
-      DBG("file %s not writeable\n", buffer);
-      send_error(fd, 404, "Could not open file");
-      return;
+      os = & oss;
+    }
+  else
+    {
+      /* build the absolute path to the file */
+      char buffer[BUFFER_SIZE] = {0};
+      strncat(buffer, conf.docroot, sizeof(buffer)-1);
+      strncat(buffer, parameter, sizeof(buffer)-strlen(buffer)-1);
+      
+      ofile.open( buffer, ios::trunc );
+      if ( ! ofile.is_open() ) 
+	{
+      	  DBG("file %s not writeable\n", buffer);
+	  send_error(fd, 404, "Could not open file");
+	  return;
+	}
+      os = & ofile;
     }
   
   int total = 0;
@@ -627,30 +640,25 @@ HTTPD::ReceiveFile(int fd, iobuffer * iobuf, char const * parameter, size_t leng
 
 	  if ( ( doWrite ) && ( ! header ) )
 	    {
-	      int left = in;
-	      int done = 0;
-	      
-	      while( left > 0 ) 
-		{
-		  int out = write(lfd, content + done, left);
-		  if ( out < 0 )
-		    {
-		      close(lfd);
-		      send_error(fd, 404, "Could not write file");
-		      return;
-		    }
-		  done = done + out;
-		  left = left - done;
-		}
+	      (* os ).write( content, strlen( content ) );
 	    }
 	  row++;
 	}
     }
   DBG("Read and saved %d bytes\n", total );
 
-  close(lfd);
+  std::ofstream * of;
+  std::ostringstream * ossp;
+  if ( ( of = dynamic_cast<std::ofstream *>(os) ) != 0 )
+    {
+      (*of).close();
+    }
+  else if ( ( ossp = dynamic_cast<std::ostringstream *>(os) ) != 0 )
+    {
+      std::string config = (*ossp).str();
+      conf.video->UpdateRunningConfiguration( config );
+    }
 }
-
 
 /******************************************************************************
 Description.: Serve a connected TCP-client. This thread function is called

@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <boost/program_options.hpp>
 
 #include <pthread.h>
 
@@ -16,6 +17,7 @@
 #include "../libvideo/colourdefinition.h"
 
 using namespace std;
+namespace po = boost::program_options;
 
 class FrameBuffer;
 class VideoDevice;
@@ -78,8 +80,7 @@ public:
   //int output_run();
   
   void setDone( bool done );
-  
-  bool getDone( void );
+  bool getDone( void ) const;
   
   static globals          global;
   
@@ -94,6 +95,7 @@ public:
 		     unsigned int subsample, 
 		     std::vector<ColourDefinition> colours, 
 		     RawPixel mark );
+
 
   static int CommandProcessingMode( VideoStream * video, char const * command, char * response, unsigned int respLength );
   static int CommandUpdateColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
@@ -146,11 +148,17 @@ public:
  public:
   std::string ReadRunningConfiguration( void );
 
+ public:
+  void UpdateRunningConfiguration( std::string configStr );
+
  private:
   std::string GetColourList( void );
 
  private:
   std::string selectedColour;
+
+ private:
+  po::options_description configOptions;
 };
 
 #endif /* __VIDEOSTREAM_H__ */

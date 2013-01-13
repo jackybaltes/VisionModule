@@ -1054,6 +1054,14 @@ VideoStream::ReadRunningConfiguration( void )
   return os.str();
 }
 
+void
+VideoStream::UpdateRunningConfiguration( std::string configStr )
+{
+  config conf = server.conf;
+  //Configuration cfg( configStr );
+  
+}
+
 unsigned int
 VideoStream::GetSubsample( void ) const 
 {
