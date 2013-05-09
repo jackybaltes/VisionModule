@@ -4,28 +4,50 @@
 #include <sstream>
 #include <string>
 
+#include <unistd.h>
+#include <sys/types.h>
+#include <signal.h>
 #include <boost/program_options.hpp>
 #include <arpa/inet.h>
 
 #include "httpd.h"
+#include "httpdthread.h"
+#include "httpdserverthread.h"
 #include "videostream.h"
 #include "serial.h"
 #include "configuration.h"
+#include "globals.h"
 
 using namespace std;
 
 namespace po = boost::program_options;
 
-globals VideoStream::global;
-
 int ApplyConfiguration( Configuration & configuration );
+
+static char progname[256];
+
+void
+CatchHUPSignal( int num )
+{
+  signal(SIGHUP, CatchHUPSignal );
+  int err;
+
+  if ( ( err = execl( progname, "-c", "./www/__config__.cfg", NULL) ) < 0 )
+    {
+      perror("execl failed:");
+      exit(10);
+    }
+}
 
 int 
 main( int argc, char ** argv )
 {
   string config_file;
+  Configuration configuration;
+  Globals * glob = Globals::GetGlobals();
 
-  int bayer = 0;
+  strncpy(progname, argv[0], 255 );
+  progname[255] = '\0';
 
   try 
     {
@@ -38,51 +60,11 @@ main( int argc, char ** argv )
 	("config,c", po::value<string>( & config_file )->default_value(""), "config file name")
 	;
 
-      po::options_description generalOptions("General Options");
-      generalOptions.add_options()
-	("subsample", po::value<unsigned int>( )->default_value(1),"sub sample")
-	;
-
-      po::options_description cameraOptions("Camera Options");
-      cameraOptions.add_options()
-	("video_device,d", po::value<string>( )->default_value("/dev/video0"), "video device name")
-	("width,w", po::value<unsigned int>( )->default_value(320),"width")
-	("height,h", po::value<unsigned int>( )->default_value(240),"height")
-	("depth", po::value<unsigned int>( )->default_value(24),"depth")
-	("brightness", po::value<int> ( )->default_value(-1),"brightness")
-	("contrast", po::value<int> ( )->default_value(-1),"contrast")
-	("saturation", po::value<int> ( )->default_value(-1),"saturation")
-	("sharpness", po::value<int> ( )->default_value(-1),"sharpness")
-	("gain", po::value<int> ( )->default_value(-1),"gain")
-	;
-
-      po::options_description httpOptions("Http Server Options");
-      httpOptions.add_options()
-	("http_port", po::value<unsigned int>( )->default_value(8080)->required(),"http port number")
-	("http_addr", po::value<string>( )->default_value("0.0.0.0")->required(),"http address")
-	("docroot", po::value<string>( )->default_value("www/")->required(),"http document root")
-	("index", po::value<string>( )->default_value("index.html"),"index.html file name")
-	;
-        
-      po::options_description colourOptions("General Options");
-      colourOptions.add_options()
-	("colour", po::value<vector<string> >( ),"colour definition")
-      ;
-      
-      po::options_description serialOptions("Serial Port Options");
-      serialOptions.add_options()
-	("serial_device", po::value<string>( )->default_value(""),"serial device name or empty for no serial port output")
-	("baudrate", po::value<string>( )->default_value("B115200"),"baudrate");
-
       po::options_description commandLineOptions;
-      commandLineOptions.add(commandLineOnlyOptions).add(generalOptions).add(cameraOptions).add(httpOptions).add(colourOptions).add(serialOptions)
+      commandLineOptions.add(commandLineOnlyOptions).add(configuration.options)
 	;
-
-      po::options_description configFileOptions;
-      configFileOptions.add(generalOptions).add(cameraOptions).add(httpOptions).add(colourOptions).add(serialOptions);
-
       po::variables_map vm;
-      po::store(po::parse_command_line(argc,argv,commandLineOptions),vm);
+      po::store(po::parse_command_line(argc,argv, commandLineOptions),vm);
       po::notify(vm);
 
       if ( vm.count("help") )
@@ -93,7 +75,7 @@ main( int argc, char ** argv )
 
       if (vm.count("version") )
 	{
-	  cout << "Version 0.0.0 Thu Dec  6 02:25:47 CST 2012" << endl;
+	  cout << "Version 0.0.1 Sun Jan 13 02:21:18 CST 2013" << endl;
 	  return 1;
 	}
 
@@ -101,12 +83,11 @@ main( int argc, char ** argv )
 	{
 	  ifstream ifs( config_file.c_str() );
 	  
-	  po::store(po::parse_config_file(ifs, configFileOptions), vm );
+	  po::store(po::parse_config_file(ifs, configuration.options), vm );
 	  po::notify(vm);
 	}
 
-      Configuration configuration( vm );
-
+      configuration.UpdateConfiguration( vm );
       std::cout << configuration;
       ApplyConfiguration( configuration );
     }
@@ -121,6 +102,7 @@ int
 ApplyConfiguration( Configuration & configuration )
 {
   string driver;
+  Globals * glob = Globals::GetGlobals();
   
   if ( configuration.device_video.substr(0, 10) ==  "/dev/video" )
     {
@@ -150,6 +132,8 @@ ApplyConfiguration( Configuration & configuration )
   unsigned int numBuffers = 3;
   unsigned int fps = 30;
 
+  glob->SetBuffer( ( uint8_t *)malloc( configuration.width * configuration.height * configuration.depth/8 ), configuration.width * configuration.height * configuration.depth/8 );
+
   VideoStream * video = new VideoStream( driver, 
 					 configuration.device_video, 
 					 input, 
@@ -166,8 +150,8 @@ ApplyConfiguration( Configuration & configuration )
 					 configuration.sharpness, 
 					 configuration.gain );
 
-  // TODO Auto-generated constructor stub
-  VideoStream::global.buf = ( uint8_t *)malloc( configuration.width * configuration.height * configuration.depth/8 );
+
+  glob->SetVideo( video );
 
 #if defined(DEBUG)
   unsigned int bpp = depth/8;
@@ -184,25 +168,7 @@ ApplyConfiguration( Configuration & configuration )
 	}
     }
 #endif
-  VideoStream::global.size = configuration.width * configuration.height * configuration.depth/8;
   
-  if(pthread_mutex_init(& VideoStream::global.db, NULL) != 0)
-    {
-      perror("pthread_mutex_init:");
-      exit(EXIT_FAILURE);
-    }
-      
-  if(pthread_cond_init(& VideoStream::global.db_update, NULL) != 0)
-    {
-      perror("pthread_cond_init:");
-      exit(EXIT_FAILURE);
-    }
-      
-  if(pthread_mutex_init(& (video->controls_mutex), NULL) != 0)
-    {
-      perror("pthread_mutex_init:");
-      exit(EXIT_FAILURE);
-    }
 
   Serial * serial = 0;
   if ( configuration.device_serial != "" )
@@ -215,16 +181,7 @@ ApplyConfiguration( Configuration & configuration )
 	}
     }
 
-  video->server.pglobal = & VideoStream::global;
-  video->server.conf.http_port = configuration.http_port;
-  video->server.conf.http_addr = configuration.http_addr.c_str();
-  video->server.conf.credentials = NULL;
-  video->server.conf.docroot = configuration.docroot.c_str();
-  video->server.conf.index = configuration.index.c_str();
-  video->server.conf.nocommands = 0;
-  video->server.conf.commands = video->Commands;
-  video->server.conf.video = video;
-  video->server.conf.serial = serial;
+  glob->SetSerial( serial );
 
   std::vector<ColourDefinition> colourDefs;
 
@@ -254,14 +211,26 @@ ApplyConfiguration( Configuration & configuration )
   cout << "Starting video thread" << endl;
 #endif
       
-  pthread_create(&(video->server.threadID), NULL, HTTPD::server_thread, &(video->server));
-  pthread_detach(video->server.threadID);
+  HTTPD * server = new HTTPD( configuration.http_port, 
+			      configuration.http_addr.c_str(), 
+			      NULL, 
+			      configuration.docroot.c_str(), 
+			      configuration.index.c_str(), 
+			      video->Commands );
+  glob->SetHTTPDServer( server );
+
+  HTTPDServerThread * thread = new HTTPDServerThread( server );
+
+  glob->SetHTTPDServerThread( thread );
+  thread->StartAndDetach();
       
   cout << "Starting video processing thread" << endl;
       
   pthread_create(&(video->threadID), NULL, (void * (*) ( void *)) video->run_trampoline, static_cast<void *>( video ) );
   pthread_detach(video->threadID);
       
+  signal(SIGHUP, CatchHUPSignal );
+
   for(;;)
     {
       sleep(1000);

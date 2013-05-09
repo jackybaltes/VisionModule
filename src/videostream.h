@@ -12,8 +12,6 @@
 
 #include <pthread.h>
 
-#include "httpd.h"
-
 #include "../libvideo/colourdefinition.h"
 
 using namespace std;
@@ -82,12 +80,8 @@ public:
   void setDone( bool done );
   bool getDone( void ) const;
   
-  static globals          global;
-  
   //  pthread_t               cam;
   pthread_mutex_t         controls_mutex;
-  
-  context                 server;
   
   void ProcessFrame( enum ProcessType ptype, 
 		     FrameBuffer * frame, 
@@ -105,6 +99,7 @@ public:
   static int CommandAddColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
   static int CommandDeleteColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
   static int CommandSelectColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
+  static int CommandShutdown( VideoStream * video, char const * command, char * response, unsigned int respLength );
 
  private:
   VideoDevice * device;

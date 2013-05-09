@@ -17,7 +17,7 @@ unsigned int const BRIGHT_PIXEL = 256;
 unsigned int const DARK_PIXEL = 4;
 
 enum ImageProcessing::ErrorCode
-ImageProcessing::doFloodFill( FrameBuffer const * frame,
+ImageProcessing::doFloodFill( FrameBuffer * frame,
 			      FrameBuffer * outFrame,
 			      Point p,
 			      RawPixel seed, 
@@ -96,6 +96,7 @@ ImageProcessing::doFloodFill( FrameBuffer const * frame,
 	      state->addPoint( c, pixel );
 	      
 	      outIter.setPixel( seed, 0 );
+	      iter.setPixel( seed, 0 );
 	      if ( c.x() >= subSample ) 
 		{
 		  iter.getPixel( &neighbour, -subSample * frame->bytesPerPixel );
@@ -140,6 +141,7 @@ ImageProcessing::doFloodFill( FrameBuffer const * frame,
 	    {
 	      // mark the pixel as checked
 	      outIter.setPixel( seed, 0 );
+	      iter.setPixel( seed, 0 );
 	    }
 	}
     }
@@ -152,7 +154,7 @@ ImageProcessing::doFloodFill( FrameBuffer const * frame,
 }
 
 void
-ImageProcessing::segmentScanLines( FrameBuffer const * frame, 
+ImageProcessing::segmentScanLines( FrameBuffer * frame, 
 				   FrameBuffer * outFrame, 
 				   unsigned int threshold, 
 				   unsigned int minLength,
@@ -235,6 +237,11 @@ ImageProcessing::segmentScanLines( FrameBuffer const * frame,
 			  drawBresenhamLine( outFrame, tlx, bry, brx, bry, mark );
 			  drawBresenhamLine( outFrame, brx, bry, brx, tly, mark );
 			  drawBresenhamLine( outFrame, brx, tly, tlx, tly, mark );
+
+			  drawBresenhamLine( frame, tlx, tly, tlx, bry, mark );
+			  drawBresenhamLine( frame, tlx, bry, brx, bry, mark );
+			  drawBresenhamLine( frame, brx, bry, brx, tly, mark );
+			  drawBresenhamLine( frame, brx, tly, tlx, tly, mark );
 			  //		      swapColours( outFrame, 0, state.bBox(), 1, ColourDefinition( Pixel(colour), Pixel(colour) ), state.averageColour() );
 			}
 		    }
@@ -258,7 +265,7 @@ ImageProcessing::segmentScanLines( FrameBuffer const * frame,
 }
 
 void
-ImageProcessing::SegmentColours( FrameBuffer const * frame, 
+ImageProcessing::SegmentColours( FrameBuffer * frame, 
 				 FrameBuffer * outFrame, 
 				 unsigned int threshold, 
 				 unsigned int minLength,
@@ -323,6 +330,11 @@ ImageProcessing::SegmentColours( FrameBuffer const * frame,
 		      drawBresenhamLine( outFrame, tlx, bry, brx, bry, mark );
 		      drawBresenhamLine( outFrame, brx, bry, brx, tly, mark );
 		      drawBresenhamLine( outFrame, brx, tly, tlx, tly, mark );
+
+		      drawBresenhamLine( frame, tlx, tly, tlx, bry, mark );
+		      drawBresenhamLine( frame, tlx, bry, brx, bry, mark );
+		      drawBresenhamLine( frame, brx, bry, brx, tly, mark );
+		      drawBresenhamLine( frame, brx, tly, tlx, tly, mark );
 		      //		      swapColours( outFrame, 0, state.bBox(), 1, ColourDefinition( Pixel(colour), Pixel(colour) ), state.averageColour() );
 		      VisionObject vo( target.name, state.size(), state.x(), state.y(), state.averageColour(), state.bBox() );
 

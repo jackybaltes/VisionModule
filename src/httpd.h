@@ -36,21 +36,10 @@
 #define OUTPUT_PLUGIN_PREFIX " o: "
 #define OPRINT(...) { char _bf[1024] = {0}; snprintf(_bf, sizeof(_bf)-1, __VA_ARGS__); fprintf(stdout, "%s", OUTPUT_PLUGIN_PREFIX); fprintf(stdout, "%s", _bf); syslog(LOG_INFO, "%s", _bf); }
 
-typedef struct _globals globals;
-
 class VideoStream;
 class Serial;
-
-struct _globals 
-{
-  /* signal fresh frames */
-  pthread_mutex_t db;
-  pthread_cond_t  db_update;
-  
-    /* global JPG frame, this is more or less the "database" */
-  unsigned char* buf;
-  int size;
-};
+class HTTPD;
+class HTTPDThread;
 
 enum CommandReturn
   {
@@ -60,35 +49,20 @@ enum CommandReturn
     COMMAND_ERR_PARAMETER = -2
   };
 
-
-
 struct Command 
 {
   int (* command)( VideoStream * video, char const * parameter, char * response, unsigned int maxResponseLength );
 };
 
-/* store configuration for each server instance */
-typedef struct {
-  unsigned int http_port;
-  char const * http_addr;
-  char * credentials;
-  char const * docroot;
-  char const * index;
-  char nocommands;
-  struct Command const * commands;
-  VideoStream * video;
-  Serial * serial;
-} config;
-
+#if 0
 /* context of each server thread */
 typedef struct {
   int sd;
-  globals *pglobal;
   pthread_t threadID;
 
-  config conf;
+  HTTPD * server;
 } context;
-
+#endif
 
 /* the webserver determines between these values for an answer */
 typedef enum { A_UNKNOWN, A_SNAPSHOT, A_STREAM, A_COMMAND, A_FILE, P_FILE } answer_t;
@@ -105,20 +79,17 @@ typedef struct {
   size_t content_length;
 } request;
 
-/* the iobuffer structure is used to read from the HTTP-client */
-typedef struct {
-  int level;              /* how full is the buffer */
-  char buffer[IO_BUFFER]; /* the data */
-} iobuffer;
-
+#if 0
 /*
  * this struct is just defined to allow passing all necessary details to a worker thread
  * "cfd" is for connected/accepted filedescriptor
  */
-typedef struct {
-  context *pc;
+typedef struct 
+{
+  HTTPDThread * thread;
   int fd;
 } cfd;
+#endif
 
 /*
  * Standard header to be send along with other header information like mimetype.
@@ -163,30 +134,54 @@ static const struct {
 
 class HTTPD
 {
-private:
-    static globals * pglobal;
-    static context * server;
+ public:
+  HTTPD( unsigned int http_port,
+	 char const * http_addr,
+	 char const * credentials,
+	 char const * docroot,
+	 char const * index,
+	 struct Command const commands[]);
 
-    static void init_iobuffer(iobuffer *iobuf);
-    static void init_request(request *req);
-    static void free_request(request *req);
-    static int _read(int fd, iobuffer *iobuf, void *buffer, size_t len, int timeout);
-    static int _readline(int fd, iobuffer *iobuf, void *buffer, size_t len, int timeout);
-    static void decodeBase64(char *data);
-    static void send_snapshot(int fd);
-    static void send_stream(int fd);
-    static void SendFile(int fd, char const * parameter);
-    static void ReceiveFile( int fd, iobuffer * iobuf, char const * parameter, size_t length );
-    static void ParseCommand(int fd, char const * parameter);
-    //static void input_cmd(in_cmd_type cmd, float value, char* res_str);
-    static void server_cleanup(void *arg);
-    static void *client_thread( void *arg );
 
-public:
-    static bool ClientRequest;
+ private:
+    unsigned int http_port;
 
-    static void *server_thread( void *arg );
-    static void send_error(int fd, int which, char const * message);
+ public:
+    inline unsigned int GetHTTPPort( void ) { return http_port; };
+
+ private:
+    char const * http_addr;
+
+ public:
+    inline char const * GetHTTPAddr( void ) { return http_addr; };
+
+ private:
+    char const * credentials;
+
+ public:
+    inline char const * GetCredentials( void ) { return credentials; };
+
+ private:
+    char const * docroot;
+
+ public:
+    inline char const * GetDocRoot( void ) { return docroot; };
+
+ private:
+    char const * index;
+
+ public:
+    inline char const * GetIndex( void ) { return index; };
+
+ private:
+    struct Command const * commands;   
+
+ public:
+    inline struct Command const * GetCommands( void ) { return commands; };
+
+ public:
+    static void *server_thread( HTTPD * server, void *arg );
+
 };
 
 

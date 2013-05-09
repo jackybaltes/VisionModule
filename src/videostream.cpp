@@ -32,19 +32,17 @@ using namespace std;
 #include <arpa/inet.h>
 #include <linux/videodev2.h>
 
-#include "videostream.h"
-#include "jpeg_utils.h"
-#include "httpd.h"
-#include "configuration.h"
-
+#include "../libvideo/colourdefinition.h"
 #include "../libvideo/framebuffer.h"
 #include "../libvideo/framebufferrgb24.h"
 #include "../libvideo/framebufferrgb24be.h"
-#include "../libvideo/colourdefinition.h"
-#include "../libvideo/pixel.h"
 #include "../libvideo/imageprocessing.h"
-
+#include "../libvideo/pixel.h"
+#include "configuration.h"
+#include "globals.h"
+#include "httpd.h"
 #include "serial.h"
+#include "videostream.h"
 
 using namespace std;
 
@@ -58,6 +56,7 @@ struct Command const VideoStream::Commands[] =
     VideoStream::CommandAddColour,
     VideoStream::CommandDeleteColour,
     VideoStream::CommandSelectColour,
+    VideoStream::CommandShutdown,
     { NULL }
   };
 
@@ -78,7 +77,7 @@ VideoStream::VideoStream(string driver,
 			 int gain
 			 )
   : done( true ),
-    mode( VideoStream::Raw ),
+    mode( VideoStream::SegmentColours ),
     subsample( subsample )
 {
   if (0)
@@ -197,6 +196,8 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
 			   RawPixel mark
 			   )
 {
+  Globals * glob = Globals::GetGlobals();
+
   outFrame->fill( RawPixel( 0, 0, 0 ) );
   
   if ( (  ptype == Raw ) || ( ptype == ShowColours ) )
@@ -232,19 +233,21 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
 					   colours[i], 
 					   mark,
 					   results );
+	  ImageProcessing::convertBuffer( frame, outFrame, subsample );
+
 	  DBG("Segmentation found %d results", results.size() );
 	  for( std::list<VisionObject>::iterator i = results.begin();
 	       i != results.end();
 	       ++i)
 	    {
 	      DBG("Found %s size %d at %d,%d\n", (*i).type.c_str(), (*i).size, (*i).x, (*i).y );
-	      if ( server.conf.serial != 0 )
+	      if ( glob->GetSerial() != 0 )
 		{
 		  std::ostringstream o;
 		  VisionObject vo = (*i);
 		  o << vo;
 		  DBG("Serial output: %s\n", o.str().c_str() );
-		  server.conf.serial->write(o.str().c_str() );
+		  glob->GetSerial()->write(o.str().c_str() );
 		}
 	    }
 	}
@@ -290,7 +293,9 @@ VideoStream::~VideoStream()
 int 
 VideoStream::sendImage(FrameBuffer * img)
 {
-  if(HTTPD::ClientRequest == true)
+  Globals * glob = Globals::GetGlobals();
+
+  if( glob->GetClientRequest() == true )
     {
 
 #ifdef DEBUG
@@ -300,40 +305,38 @@ VideoStream::sendImage(FrameBuffer * img)
 	{
 	  //	  memcpy(img->buffer, img->buffer, img->frameSize);
 	  
-	  pthread_mutex_lock(&global.db);
+	  glob->LockBuffer();
 	  
-	  if(img->bytesPerPixel == 3)
+	  unsigned int size = img->ConvertToJpeg( glob->GetBuffer(), glob->GetSize(), 80 );
+	  if ( size == 0 )
 	    {
-	      global.size = jpeg_utils::compress_fb_to_jpeg(img, global.buf, img->frameSize, 80);
+	      std::cerr << "Conversion of framebuffer to jpeg failed" << std::endl;
 	    }
-	  else
-	    {
-	      std::cerr << "Unable to handle this pixel size" << std::endl;
-	    }
+	  glob->SetSize( size );
+	  glob->UnlockBuffer( );
 	}
       else
 	{
 	  std::cerr << "Unable to deal with this image type" << std::endl;
 	}
-      pthread_cond_broadcast(&global.db_update);
-      pthread_mutex_unlock(&global.db);
-      HTTPD::ClientRequest = false;
+      glob->SetClientRequest( false );
     }
-  else
-    {
-      pthread_mutex_lock(&global.db);
-      pthread_cond_broadcast(&global.db_update);
-      pthread_mutex_unlock(&global.db);
-    }
+
+  glob->LockBuffer();
+  glob->BroadcastBuffer();
+  glob->UnlockBuffer();
+
   return 0;
 }
-  
+
+/*  
 void * 
 VideoStream::server_thread(void * arg)
 {
   HTTPD::server_thread(arg);
   return NULL;
 }
+*/
 
   // Make sure that these match the ProcessType enum above.
 static char const * processTypeStrings[] = 
@@ -1007,6 +1010,8 @@ VideoStream::SetColours( std::vector<ColourDefinition> colours )
 std::string
 VideoStream::ReadRunningConfiguration( void ) 
 {
+  Globals * glob = Globals::GetGlobals();
+
   Configuration config;
   
   // General options
@@ -1028,10 +1033,10 @@ VideoStream::ReadRunningConfiguration( void )
     }
   
   // HTTP options
-  config.http_port = server.conf.http_port; 
-  config.http_addr = server.conf.http_addr;
-  config.docroot = server.conf.docroot;
-  config.index = server.conf.index;
+  config.http_port = glob->GetHTTPDServer()->GetHTTPPort(); 
+  config.http_addr = glob->GetHTTPDServer()->GetHTTPAddr();
+  config.docroot = glob->GetHTTPDServer()->GetDocRoot();
+  config.index = glob->GetHTTPDServer()->GetIndex();
 
   // Colour options
   config.colours.clear();
@@ -1043,10 +1048,10 @@ VideoStream::ReadRunningConfiguration( void )
       config.colours.push_back( (*i).ToString() );
     }
   // Serial options
-  if ( server.conf.serial != 0 )
+  if ( glob->GetSerial() != 0 )
     {
-      config.device_serial = server.conf.serial->GetDeviceName();
-      config.baudrate = Serial::ConvertBaudrateToString( server.conf.serial->GetBaudrate() );
+      config.device_serial = glob->GetSerial()->GetDeviceName();
+      config.baudrate = Serial::ConvertBaudrateToString( glob->GetSerial()->GetBaudrate() );
     }
 
   std::stringstream os;
@@ -1057,8 +1062,11 @@ VideoStream::ReadRunningConfiguration( void )
 void
 VideoStream::UpdateRunningConfiguration( std::string configStr )
 {
-  config conf = server.conf;
-  //Configuration cfg( configStr );
+  Globals * glob = Globals::GetGlobals();
+
+  Configuration cfg;
+
+  cfg.UpdateConfiguration( configStr );
   
 }
 
@@ -1072,4 +1080,19 @@ void
 VideoStream::SetSubsample( unsigned int subsample )
 {
   this->subsample = subsample;
+}
+
+int
+VideoStream::CommandShutdown( VideoStream * video, char const * command, char * response, unsigned int respLength )
+{
+  int ret = COMMAND_ERR_COMMAND;
+  char const * s;
+  response[0] = '\0';
+
+  if ( ( s = strstr(command, "command=shutdown") ) != NULL )
+    {
+      ret = COMMAND_ERR_OK;
+      system( "sudo shutdown -h now" );
+    }
+  return ret;
 }

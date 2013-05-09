@@ -12,6 +12,10 @@ class FrameBufferRGB24BE : public FrameBufferRGB24
 
   virtual void getPixel( void * p, RawPixel * pixel ) const;
   virtual void setPixel( void * p, RawPixel const pixel );
+
+ public:
+  virtual unsigned int ConvertToJpeg( uint8_t * buffer, unsigned int maxSize, unsigned int quality );
+
 };
 
 #endif /* _FRAME_BUFFER_RGB24BE_H_ */

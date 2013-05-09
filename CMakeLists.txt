@@ -21,18 +21,22 @@ ADD_EXECUTABLE( vision_module
   libvideo/geometry.cpp
   libvideo/imageprocessing.cpp
   libvideo/integralimage.cpp
+  libvideo/jpeg_utils.cpp
   libvideo/pixel.cpp
   libvideo/quadtreedecomposition.cpp
   libvideo/rect.cpp
   libvideo/v4l2device.cpp
   libvideo/videodevice.cpp
   libvideo/visionobject.cpp
-  src/main.cpp
-  src/videostream.cpp
-  src/httpd.cpp
-  src/jpeg_utils.cpp
-  src/serial.cpp
   src/configuration.cpp
+  src/globals.cpp
+  src/httpd.cpp
+  src/httpdthread.cpp
+  src/httpdserverthread.cpp
+  src/httpdclientthread.cpp
+  src/main.cpp
+  src/serial.cpp
+  src/videostream.cpp
 )
 
 ADD_DEFINITIONS(

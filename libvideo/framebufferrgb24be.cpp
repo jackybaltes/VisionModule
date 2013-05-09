@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include "pixel.h"
 #include <assert.h>
+#include "jpeg_utils.h"
 
 FrameBufferRGB24BE::FrameBufferRGB24BE()
 {
@@ -39,3 +40,9 @@ FrameBufferRGB24BE::setPixel( void * ptr, RawPixel const pixel )
   *p++ = pixel.blue;
 }
 
+unsigned int
+FrameBufferRGB24BE::ConvertToJpeg( uint8_t * buffer, unsigned int maxSize, unsigned int quality )
+{
+  unsigned int size = jpeg_utils::compress_fb_to_jpeg(this, buffer, frameSize, quality );
+  return size;
+}

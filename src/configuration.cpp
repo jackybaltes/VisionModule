@@ -12,14 +12,70 @@ namespace po = boost::program_options;
 
 Configuration::Configuration( )
 {
+  po::options_description generalOptions("General Options");
+  generalOptions.add_options()
+    ("subsample", po::value<unsigned int>( )->default_value(1),"sub sample")
+    ;
+  
+  po::options_description cameraOptions("Camera Options");
+  cameraOptions.add_options()
+    ("video_device,d", po::value<string>( )->default_value("/dev/video0"), "video device name")
+    ("width,w", po::value<unsigned int>( )->default_value(320),"width")
+    ("height,h", po::value<unsigned int>( )->default_value(240),"height")
+    ("depth", po::value<unsigned int>( )->default_value(24),"depth")
+    ("brightness", po::value<int> ( )->default_value(-1),"brightness")
+    ("contrast", po::value<int> ( )->default_value(-1),"contrast")
+    ("saturation", po::value<int> ( )->default_value(-1),"saturation")
+    ("sharpness", po::value<int> ( )->default_value(-1),"sharpness")
+    ("gain", po::value<int> ( )->default_value(-1),"gain")
+    ;
+  
+  po::options_description httpOptions("Http Server Options");
+  httpOptions.add_options()
+    ("http_port", po::value<unsigned int>( )->default_value(8080)->required(),"http port number")
+    ("http_addr", po::value<string>( )->default_value("0.0.0.0")->required(),"http address")
+    ("docroot", po::value<string>( )->default_value("www/")->required(),"http document root")
+    ("index", po::value<string>( )->default_value("index.html"),"index.html file name")
+    ;
+  
+  po::options_description colourOptions("General Options");
+  colourOptions.add_options()
+    ("colour", po::value<vector<string> >( ),"colour definition")
+    ;
+  
+  po::options_description serialOptions("Serial Port Options");
+  serialOptions.add_options()
+    ("serial_device", po::value<string>( )->default_value(""),"serial device name or empty for no serial port output")
+    ("baudrate", po::value<string>( )->default_value("B115200"),"baudrate");
+
+  options.add(generalOptions).add(cameraOptions).add(httpOptions).add(colourOptions).add(serialOptions);
 }
 
-//Configuration::Configuration( std::string configStr )
-//{
-//  
-//}
+void
+Configuration::UpdateConfiguration( std::string configStr )
+{
+  std::istringstream is( configStr );
 
-Configuration::Configuration( po::variables_map const & vm )
+  std::cout << ">>>>>>>>>> UpdateConfiguration" << std::endl;
+  std::cout << configStr << std::endl;
+  std::cout << "<<<<<<<<<< UpdateConfiguration" << std::endl;
+
+  UpdateConfiguration( is );
+}
+
+void
+Configuration::UpdateConfiguration( std::istream & iconfig )
+{
+  po::variables_map vm;
+
+  po::store(po::parse_config_file(iconfig, options), vm );
+  po::notify(vm);
+
+  UpdateConfiguration( vm );
+}
+
+void
+Configuration::UpdateConfiguration( po::variables_map const & vm )
 {
   // General options
   subsample = vm["subsample"].as<unsigned int>();

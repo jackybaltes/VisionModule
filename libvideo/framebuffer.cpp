@@ -745,3 +745,9 @@ FrameBuffer::fill( Rect const & rect, RawPixel const pix )
 	}
     }
 }
+
+unsigned int
+FrameBuffer::ConvertToJpeg( uint8_t * buffer, unsigned int maxSize, unsigned int quality )
+{
+  return 0;
+}

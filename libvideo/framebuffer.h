@@ -129,6 +129,9 @@ class FrameBuffer
 
  protected:
   enum FrameBufferType _type;
+
+ public:
+  virtual unsigned int ConvertToJpeg( uint8_t * buffer, unsigned int maxSize, unsigned int quality );
 };
 
 class FrameBufferIterator
@@ -178,6 +181,7 @@ class FrameBufferIterator
   uint8_t * pixelPtr;
   unsigned int row;
   unsigned int column;
+
 };
 
 

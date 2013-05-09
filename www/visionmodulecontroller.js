@@ -187,7 +187,7 @@ function imageOnload() {
 }
 
 function OnChangeProcessingMode() {
-    sb = document.getElementById('processingMode');
+    var sb = document.getElementById('processingMode');
     SendCommand("processingmode" + "&" + "mode=" + sb.value) 
     
     return false;
@@ -305,7 +305,7 @@ function onmouseclickVideo( event ) {
 	var imgd = ctx.getImageData( x, y, 1, 1 );
 	var pix = imgd.data;
 	
-	//console.log("Pixel " + pix[0] + "," + pix[1] + "," + pix[2] );
+	console.log("Pixel(" + x + "," + y + ")" + "=" + pix[0] + "," + pix[1] + "," + pix[2] );
 	AddPixelToColourDefinition( pix );
     }
 }
@@ -601,7 +601,7 @@ function OnChangeVideoControl( ctrl ) {
     SendCommand("videocontrol" + "&" + "control=" + ctrl.name + "&value=" + ctrl.value); 
 }
 
-function OnClickedAddColour( ) {
+function OnClickAddColour( ) {
     $( "#add-colour-dialog-modal" ).dialog("open"); 
 }
 
@@ -659,4 +659,8 @@ function UploadConfiguration( inp ) {
 
 	AJAX_put( xhr, '/__config__.cfg', file );
     }
+}
+
+function OnClickShutdown( ) {
+    SendCommand( "shutdown" );
 }

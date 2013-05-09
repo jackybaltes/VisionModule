@@ -19,7 +19,15 @@ class Configuration
 {
  public:
   Configuration( );
-  Configuration( po::variables_map const & vm );
+
+ public:
+  void UpdateConfiguration( po::variables_map const & vm );
+
+ public:
+  void UpdateConfiguration( std::string configStr );
+
+ public:
+  void UpdateConfiguration( std::istream & iconfig );
 
  public:
   // General options
@@ -50,6 +58,9 @@ class Configuration
   string baudrate;
 
   friend std::ostream & operator<<(std::ostream & os, Configuration const & config );
+
+ public:
+  po::options_description options;
 
 };
 

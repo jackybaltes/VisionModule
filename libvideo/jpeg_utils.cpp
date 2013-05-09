@@ -10,7 +10,7 @@
 
 #include <string.h>
 
-#include "jpeg_utils.h"
+#include "../libvideo/jpeg_utils.h"
 
 #define OUTPUT_BUF_SIZE  4096
 
