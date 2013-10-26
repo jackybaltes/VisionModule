@@ -20,7 +20,7 @@ using namespace std;
 #include <unistd.h>
 
 
-#include "Serial.h"
+#include "serial.h"
 
 Serial::Serial( string devname, speed_t baudrate )
 {

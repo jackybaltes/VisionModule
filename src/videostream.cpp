@@ -287,7 +287,6 @@ VideoStream::~VideoStream()
       device->stopCapture();
       delete device;
     }
-  // TODO Auto-generated destructor stub
 }
 
 int 
@@ -1057,17 +1056,6 @@ VideoStream::ReadRunningConfiguration( void )
   std::stringstream os;
   os << config;
   return os.str();
-}
-
-void
-VideoStream::UpdateRunningConfiguration( std::string configStr )
-{
-  Globals * glob = Globals::GetGlobals();
-
-  Configuration cfg;
-
-  cfg.UpdateConfiguration( configStr );
-  
 }
 
 unsigned int

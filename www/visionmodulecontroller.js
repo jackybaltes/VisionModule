@@ -297,10 +297,10 @@ function onmousedownVideo( event ) {
 
 function onmouseclickVideo( event ) {
     if ( mouseDown ) {
-	var x = event.clientX - clientRect.left;
-	var y = event.clientY - clientRect.top;
+	var x = (event.clientX - clientRect.left) | 0;
+	var y = (event.clientY - clientRect.top) | 0;
     
-	//console.log("Reading position (" + x + "," + y + ")");
+	console.log("Reading position (" + x + "," + y + ")");
 
 	var imgd = ctx.getImageData( x, y, 1, 1 );
 	var pix = imgd.data;

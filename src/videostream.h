@@ -143,9 +143,6 @@ public:
  public:
   std::string ReadRunningConfiguration( void );
 
- public:
-  void UpdateRunningConfiguration( std::string configStr );
-
  private:
   std::string GetColourList( void );
 

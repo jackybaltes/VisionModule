@@ -16,7 +16,7 @@
 #include "framebufferrgb32.h"
 #include "framebufferrgb24be.h"
 #include "framebufferbayer.h"
-#include "linux/videodev.h"
+#include "linux/videodev2.h"
 #include "v4l2device.h"
 
 V4L2Device::V4L2Device (string devname, string inputName, string standardName, unsigned int fps, unsigned int width, unsigned int height, unsigned int depth, unsigned int numBuffers )

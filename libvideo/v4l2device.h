@@ -5,7 +5,7 @@
 #define _V4L2_DEVICE_H_
 
 #include "videodevice.h"
-#include <linux/videodev.h>
+#include <linux/videodev2.h>
 
 using namespace std;
 
