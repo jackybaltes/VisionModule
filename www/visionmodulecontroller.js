@@ -178,11 +178,11 @@ function CreateImageLayer() {
     img.style.zIndex = 0;
     img.onload = imageOnload;
     img.src = "/?action=snapshot&n=" + (++imageNr);
-    ctx.drawImage(img, 0,0);
+    ctx.drawImage(img, 0, 0, 320, 240 );
 }
 
 function imageOnload() {
-    ctx.drawImage(this, 0,0);
+    ctx.drawImage(this, 0, 0, 320, 240 );
     if (!paused) CreateImageLayer();
 }
 
@@ -214,7 +214,7 @@ function InitCanvas() {
     }
 //    console.log("Image data %d %d %d %d %d %d", imgd.data[0], imgd.data[1], imgd.data[2], imgd.data[3], imgd.data[4], imgd.data[5]);
     // Draw the ImageData at the given (x,y) coordinates.
-    ctx.putImageData(imgd, 0, 0);
+    ctx.putImageData(imgd, 0, 0 );
 }
 
 function onclickResetColour() {

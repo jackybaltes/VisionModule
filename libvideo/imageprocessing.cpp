@@ -273,14 +273,14 @@ ImageProcessing::SegmentColours( FrameBuffer * frame,
 				 unsigned int subSample,
 				 ColourDefinition const & target,
 				 RawPixel const & mark,
-				 std::list<VisionObject> & results
+				 std::vector<VisionObject> & results
 				 )
 {
   FrameBufferIterator it( frame );
   FrameBufferIterator oit( outFrame );
   Pixel cPixel;
   RawPixel oPixel;
-  unsigned int len;
+  //  unsigned int len;
   FloodFillState state;
   unsigned int count;
   
@@ -338,7 +338,7 @@ ImageProcessing::SegmentColours( FrameBuffer * frame,
 		      //		      swapColours( outFrame, 0, state.bBox(), 1, ColourDefinition( Pixel(colour), Pixel(colour) ), state.averageColour() );
 		      VisionObject vo( target.name, state.size(), state.x(), state.y(), state.averageColour(), state.bBox() );
 
-		      std::list<VisionObject>::iterator i;
+		      std::vector<VisionObject>::iterator i;
 
 		      for( i = results.begin();
 			   i != results.end();

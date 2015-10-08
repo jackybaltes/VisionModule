@@ -9,9 +9,9 @@
 #include <string>
 #include <vector>
 #include <boost/program_options.hpp>
-
 #include <pthread.h>
 
+#include "../libvideo/visionobject.h"
 #include "../libvideo/colourdefinition.h"
 
 using namespace std;
@@ -90,6 +90,7 @@ public:
 		     std::vector<ColourDefinition> colours, 
 		     RawPixel mark );
 
+  std::string ConvertResultsToString( void ) const;
 
   static int CommandProcessingMode( VideoStream * video, char const * command, char * response, unsigned int respLength );
   static int CommandUpdateColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
@@ -101,6 +102,9 @@ public:
   static int CommandSelectColour( VideoStream * video, char const * command, char * response, unsigned int respLength );
   static int CommandShutdown( VideoStream * video, char const * command, char * response, unsigned int respLength );
 
+  std::vector<VisionObject> results;
+  std::string resultString;
+
  private:
   VideoDevice * device;
   struct timeval prev;
@@ -110,7 +114,6 @@ public:
   pthread_t threadID;
 
  public:
-
   static struct Command const Commands[];
 
  private:

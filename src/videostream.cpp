@@ -48,15 +48,15 @@ using namespace std;
 
 struct Command const VideoStream::Commands[] = 
   {
-    VideoStream::CommandProcessingMode, 
-    VideoStream::CommandUpdateColour, 
-    VideoStream::CommandVideoControl,
-    VideoStream::CommandQueryColour,
-    VideoStream::CommandQueryColourList,
-    VideoStream::CommandAddColour,
-    VideoStream::CommandDeleteColour,
-    VideoStream::CommandSelectColour,
-    VideoStream::CommandShutdown,
+    { VideoStream::CommandProcessingMode },  
+    { VideoStream::CommandUpdateColour }, 
+    { VideoStream::CommandVideoControl },
+    { VideoStream::CommandQueryColour },
+    { VideoStream::CommandQueryColourList },
+    { VideoStream::CommandAddColour },
+    { VideoStream::CommandDeleteColour },
+    { VideoStream::CommandSelectColour },
+    { VideoStream::CommandShutdown },
     { NULL }
   };
 
@@ -224,7 +224,6 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
     {
       for( unsigned int i = 0; i < colours.size(); i++ )
 	{
-	  std::list<VisionObject> results;
 	  results.clear();
 
 	  ImageProcessing::SegmentColours( frame, outFrame,
@@ -233,10 +232,9 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
 					   colours[i], 
 					   mark,
 					   results );
-	  ImageProcessing::convertBuffer( frame, outFrame, subsample );
 
-	  DBG("Segmentation found %d results", results.size() );
-	  for( std::list<VisionObject>::iterator i = results.begin();
+	  DBG("Segmentation found %d results\n", results.size() );
+	  for( std::vector<VisionObject>::iterator i = results.begin();
 	       i != results.end();
 	       ++i)
 	    {
@@ -250,7 +248,10 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
 		  glob->GetSerial()->write(o.str().c_str() );
 		}
 	    }
+
+	  resultString = ConvertResultsToString();
 	}
+      ImageProcessing::convertBuffer( frame, outFrame, subsample );
     }
 
 
@@ -352,7 +353,7 @@ VideoStream::CommandProcessingMode( VideoStream * video, char const * command, c
 {
   int ret = COMMAND_ERR_COMMAND;
   char const * s;
-  enum ProcessType processMode;
+  //  enum ProcessType processMode;
 
   response[0] = '\0';
 
@@ -494,7 +495,7 @@ VideoStream::CommandUpdateColour( VideoStream * video, char const * command, cha
       is >> colour;
       if ( ! is.fail() )
 	{
-	  DBG("update colour %s\n", name);
+	  DBG("update colour %s\n", colour.name.c_str() );
 
 	  video->UpdateColour( colour );
 
@@ -750,8 +751,8 @@ VideoStream::CommandQueryColourList( VideoStream * video, char const * command, 
 {
   int ret = COMMAND_ERR_COMMAND;
   char const * s;
-  char const * start;
-  size_t len;
+  //  char const * start;
+  //size_t len;
 
   std::string name;
 
@@ -1083,4 +1084,51 @@ VideoStream::CommandShutdown( VideoStream * video, char const * command, char * 
       system( "sudo shutdown -h now" );
     }
   return ret;
+}
+
+std::string
+VideoStream::ConvertResultsToString( void ) const
+{
+  std::ostringstream o;
+  unsigned int x;
+  unsigned int y;
+  unsigned int max = 0;
+
+#ifndef NDEBUG
+  // std::cout << "VideoStream::ConvertResultsToString called" << std::endl;
+#endif
+
+  o << "Ok &";
+  for( std::vector<VisionObject>::const_iterator i = results.begin();
+       i != results.end();
+       ++i)
+    {
+#ifndef NDEBUG
+      std::cout << "Adding object " << (*i).type << std::endl;
+#endif
+      if ( i != results.begin() )
+	{
+	  o << "&";
+	}
+      o << *i;
+      /*
+      if ( (*i).size > max )
+	{
+	  x = (*i).x;
+	  y = (*i).y;
+	  max = (*i).size;
+	}
+      */
+    }
+  std::string str = o.str();
+
+#ifndef NDEBUG
+  //  std::cout << "VideoStream::ConvertResultsToString exits with result " << str << std::endl;
+#endif
+  // Hack to get the positon I want quicker
+    
+  //  std::ostringstream o2;
+  
+  //o2 << max << " " << x << " " << y << std::endl;
+  return str;
 }

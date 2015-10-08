@@ -5,7 +5,7 @@
 #ifndef _IMAGEPROCESSING_H_
 #define _IMAGEPROCESSING_H_
 
-#include <list>
+#include <vector>
 
 #include "pixel.h"
 #include "point.h"
@@ -29,7 +29,7 @@ class ImageProcessing {
   };
 
   static void segmentScanLines( FrameBuffer * frame, FrameBuffer * outFrame, unsigned int threshold, unsigned int minLength, unsigned int maxLength, unsigned int minSize, RawPixel const & mark, unsigned int subsample, ColourDefinition const * target );
-  static void SegmentColours( FrameBuffer * frame, FrameBuffer * outFrame, unsigned int threshold, unsigned int minLength, unsigned int minSize, unsigned int subSample, ColourDefinition const & target, RawPixel const & mark, std::list<VisionObject> & results );
+  static void SegmentColours( FrameBuffer * frame, FrameBuffer * outFrame, unsigned int threshold, unsigned int minLength, unsigned int minSize, unsigned int subSample, ColourDefinition const & target, RawPixel const & mark, std::vector<VisionObject> & results );
 
   static void medianFilter( FrameBuffer const * frame, FrameBuffer * outFrame, unsigned int subSample = 1 );
 

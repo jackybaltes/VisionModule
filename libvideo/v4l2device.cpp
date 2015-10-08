@@ -137,17 +137,17 @@ V4L2Device::V4L2Device (string devname, string inputName, string standardName, u
 
   if ( standardName != "auto" )
     {
-      int fieldsPerSecond;
+      //      int fieldsPerSecond;
       
       if ( standardName == "PAL" )
 	{
 	  std_id = V4L2_STD_PAL;
-	  fieldsPerSecond = 25;
+	  //	  fieldsPerSecond = 25;
 	}
       else if ( standardName == "NTSC" )
 	{
 	  std_id = V4L2_STD_NTSC;
-	  fieldsPerSecond = 30;
+	  //	  fieldsPerSecond = 30;
 	}
       else if ( standardName == "SECAM" )
 	{
@@ -800,7 +800,7 @@ V4L2Device::printFormatDesc( ostream & os, struct v4l2_fmtdesc const fmtd)
 {
   os << endl << ">>> Format Descriptor" << endl;
   os << "index " << fmtd.index;
-  printBufferType( os, fmtd.type );
+  printBufferType( os, static_cast<enum v4l2_buf_type>( fmtd.type ) );
   if ( fmtd.flags & V4L2_FMT_FLAG_COMPRESSED )
     {
       os << "compressed,";
@@ -818,7 +818,7 @@ void
 V4L2Device::printFormat( ostream & os, struct v4l2_format const fmt)
 {
   os << endl << ">>> Format" << endl;
-  printBufferType( os, fmt.type );
+  printBufferType( os, static_cast<enum v4l2_buf_type> ( fmt.type ) );
   if ( fmt.type == V4L2_BUF_TYPE_VIDEO_CAPTURE )
     {
       printPixelFormat( os, fmt.fmt.pix );
@@ -880,9 +880,9 @@ V4L2Device::printPixelFormat( ostream & os, v4l2_pix_format const pixelformat )
   os << endl << ">>> Pixel Format" << endl;
   os << width << "x" << height;
   printPixelFormat4CC( os, pixelformat.pixelformat );
-  printField( os, pixelformat.field );
+  printField( os, static_cast< enum v4l2_field> ( pixelformat.field ) );
   os << "bytesperline " << pixelformat.bytesperline << ",sizeimage " << pixelformat.sizeimage;
-  printColorSpace( os, pixelformat.colorspace );
+  printColorSpace( os, static_cast<v4l2_colorspace> ( pixelformat.colorspace ) );
   os << endl << "<<< Pixel Format" << endl;
 }
 
@@ -964,7 +964,7 @@ void
 V4L2Device::printStreamingParameters ( ostream & os, struct v4l2_streamparm const parm )
 {
   os << endl << ">>> Streaming parameters" << endl;
-  printBufferType( os, parm.type );
+  printBufferType( os, static_cast<v4l2_buf_type> (parm.type ) );
   switch ( parm.type ) 
     {
     case V4L2_BUF_TYPE_VIDEO_CAPTURE:
@@ -1170,7 +1170,7 @@ V4L2Device::releaseCurrentBuffer (void)
 void V4L2Device::printBuffer( ostream & os, struct v4l2_buffer const buffer )
 {
   os << endl << ">>> Buffer" << endl;
-  printBufferType( os, buffer.type );
+  printBufferType( os, static_cast<v4l2_buf_type> ( buffer.type ) );
   os << "index " << buffer.index << ", bytesused " << buffer.bytesused;
   os << "flags " << buffer.field << ", field " << buffer.field;
   os << endl << "<<< Buffer" << endl;

@@ -32,6 +32,7 @@ class Configuration
  public:
   // General options
   unsigned int subsample;
+  unsigned int udp_port;
 
   // Camera options
   string device_video;

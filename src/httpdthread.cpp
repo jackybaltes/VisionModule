@@ -17,8 +17,8 @@
 #include "httpd.h"
 
 HTTPDThread::HTTPDThread( HTTPD * server )
-  : server(server),
-    fd(-1)
+  : fd(-1),
+    server(server)
 {
 }
 
@@ -67,7 +67,7 @@ Return Value: -
 void 
 HTTPDThread::CleanUp( ) 
 {
-  OPRINT("cleaning up ressources allocated by server thread #%02d\n", id );
+  OPRINT("cleaning up ressources allocated by server thread #%02ld\n", id );
   
   if ( fd >= 0 )
     {

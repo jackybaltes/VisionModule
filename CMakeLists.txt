@@ -1,13 +1,27 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
+project(VisionModule)
+
+set (VERSION_MAJOR 0)
+set (VERSION_MINOR 2)
+
 IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE Debug CACHE STRING
       "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
       FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
-#set(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} -DDEBUG)
-#set(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG )
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++0x -DDEBUG -Wall")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++0x -Wall")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
+
+find_package(Boost)
+
+configure_file (
+   "${PROJECT_SOURCE_DIR}/src/config.h.in"
+   "${PROJECT_BINARY_DIR}/src/config.h"
+)
 
 ADD_EXECUTABLE( vision_module
   libvideo/colourdefinition.cpp
@@ -37,6 +51,7 @@ ADD_EXECUTABLE( vision_module
   src/main.cpp
   src/serial.cpp
   src/videostream.cpp
+  src/udpvisionserver.cpp
 )
 
 ADD_DEFINITIONS(
@@ -48,12 +63,14 @@ INCLUDE_DIRECTORIES(
 )
 
 TARGET_LINK_LIBRARIES(vision_module 
-   -lboost_program_options 
-   -lv4l2 
-   -lavcodec -lavformat -lavutil -lswscale -lz -lbz2 
-   -ldc1394 
-   -lpthread
-   -ljpeg
+   "boost_program_options"
+   "boost_system"
+   "boost_thread"
+   "v4l2"
+#   "avcodec" "avformat" "avutil" "swscale" "z" "bz2"
+#   "dc1394"
+   "pthread"
+   "jpeg"
 )
 
 ADD_CUSTOM_COMMAND(
@@ -65,3 +82,16 @@ ADD_CUSTOM_COMMAND(
   COMMENT Copying www directories
 )
 
+ADD_EXECUTABLE( visionclient
+  src/visionclientmain.cpp
+)
+
+target_link_libraries(visionclient
+   "boost_program_options"
+   "boost_system"
+   "boost_thread"
+   "v4l2"
+#   "avcodec" "avformat" "avutil" "swscale" "z" "bz2"
+#   "dc1394"
+   "pthread"
+   "jpeg")

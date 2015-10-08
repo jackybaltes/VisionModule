@@ -16,6 +16,10 @@ Configuration::Configuration( )
   generalOptions.add_options()
     ("subsample", po::value<unsigned int>( )->default_value(1),"sub sample")
     ;
+  generalOptions.add_options()
+    ("udp_port", po::value<unsigned int>( )->default_value(0),"udp port")
+    ;
+
   
   po::options_description cameraOptions("Camera Options");
   cameraOptions.add_options()
@@ -38,7 +42,7 @@ Configuration::Configuration( )
     ("index", po::value<string>( )->default_value("index.html"),"index.html file name")
     ;
   
-  po::options_description colourOptions("General Options");
+  po::options_description colourOptions("Colour Options");
   colourOptions.add_options()
     ("colour", po::value<vector<string> >( ),"colour definition")
     ;
@@ -79,6 +83,7 @@ Configuration::UpdateConfiguration( po::variables_map const & vm )
 {
   // General options
   subsample = vm["subsample"].as<unsigned int>();
+  udp_port = vm["udp_port"].as<unsigned int>();
 
   // Camera options
   device_video = vm["video_device"].as<std::string>();
@@ -115,6 +120,7 @@ operator<<(std::ostream & os, Configuration const & config )
 {
   // General options
   os << "subsample" << " = " << config.subsample << "\r\n";
+  os << "udp_port" << " = " << config.udp_port << "\r\n";
   os << "\r\n";
 
   // Camera options

@@ -139,8 +139,8 @@ HTTPDClientThread::Run( void )
     
       memset(req.parameter, 0, len+1);
       strncpy(req.parameter, pb, len);
+      DBG("parameter (len: %d): \"%s\"\n", len, req.parameter);
     }
-  DBG("parameter (len: %d): \"%s\"\n", len, req.parameter);
   
   /*
    * parse the rest of the HTTP-request
@@ -293,15 +293,17 @@ Return Value: * buffer.: will become filled with bytes read
 int 
 HTTPDClientThread::_read( iobuffer *iobuf, void *buffer, size_t len, int timeout) 
 {
-  int copied=0, rc, i;
+  unsigned int copied=0;
+  int rc;
+  int i;
   fd_set fds;
   struct timeval tv;
 
   memset(buffer, 0, len);
 
-  while ( (copied < (int)len) ) 
+  while ( (copied < len) ) 
     {
-      i = MIN(iobuf->level, (int)len-copied);
+      i = MIN( iobuf->level, (int) (len-copied) );
       memcpy(static_cast<void *>( static_cast<uint8_t *>(buffer)+copied), iobuf->buffer+IO_BUFFER-iobuf->level, i);
       
       iobuf->level -= i;
@@ -367,7 +369,7 @@ Return Value: * buffer.: will become filled with bytes read
 int 
 HTTPDClientThread::_readline( iobuffer *iobuf, void *buffer, size_t len, int timeout) {
   char c='\0', *out=(char*)buffer;
-  int i;
+  unsigned int i;
 
   memset(buffer, 0, len);
 
@@ -620,7 +622,8 @@ HTTPDClientThread::SendFile( char const * parameter)
 {
   char buffer[BUFFER_SIZE] = {0};
   char const * extension, *mimetype=NULL;
-  int i, lfd;
+  unsigned int i;
+  int lfd;
   Globals * glob = Globals::GetGlobals();
 
   /* in case no parameter was given */
@@ -733,8 +736,8 @@ HTTPDClientThread::ParseCommand( char const * parameter)
 {
   Globals * glob = Globals::GetGlobals();
   char tmpCommand[256];
-  char tmp[256];
-  char const * pcommand;
+  //  char tmp[256];
+  //  char const * pcommand;
   char response[1024];
 
   char buffer[BUFFER_SIZE] = {0};
@@ -814,7 +817,7 @@ HTTPDClientThread::ReceiveFile( iobuffer * iobuf, char const * parameter, size_t
       os = & ofile;
     }
   
-  int total = 0;
+  unsigned int total = 0;
   int in;
   unsigned int row = 0;
   mark[0] = '\0';

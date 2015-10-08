@@ -75,7 +75,7 @@ Globals::CondWaitForBuffer( void )
 void
 Globals::UpdateRunningConfiguration( Configuration const * cfg )
 {
-  Globals * glob = Globals::GetGlobals();
+  //  Globals * glob = Globals::GetGlobals();
 
   
 }

@@ -5,6 +5,7 @@
 #include "framebuffer.h"
 #include "imageprocessing.h"
 
+#if 0
 static
 unsigned int abs( int x )
 {
@@ -16,6 +17,7 @@ unsigned int abs( int x )
     }
   return res;
 }
+#endif
 
 void
 QuadTreeDecomposition::calcQuadTreeDecomposition( Rect const & rect, IntegralImage const * image, FrameBuffer * outFrame )

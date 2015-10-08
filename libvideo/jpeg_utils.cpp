@@ -165,7 +165,7 @@ int jpeg_utils::compress_fb_to_jpeg(FrameBuffer * src, unsigned char * buffer, i
     struct jpeg_error_mgr jerr;
     JSAMPROW row_pointer[1];
     uint8_t  * line_buffer, * rgb;
-    int z;
+    //    int z;
     static int written;
 
     line_buffer = (uint8_t *)alloca (src->bytesPerLine);
@@ -186,9 +186,9 @@ int jpeg_utils::compress_fb_to_jpeg(FrameBuffer * src, unsigned char * buffer, i
 
     jpeg_start_compress (&cinfo, TRUE);
 
-    z = 0;
+    //    z = 0;
     while (cinfo.next_scanline < src->height) {
-        int x;
+        unsigned int x;
         unsigned char *ptr = line_buffer;
 
         for (x = 0; x < src->width; x++) {

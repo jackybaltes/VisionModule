@@ -5,14 +5,14 @@
 
 VideoDevice::VideoDevice(std::string driver, std::string devname, std::string input, std::string standard, unsigned int fps, unsigned int width, unsigned int height, unsigned int depth, unsigned int numBuffers )
   :
-  driver( driver ),
   devname( devname ),
+  depth( depth ),
+  driver( driver ),
   input( input ),
   standard( standard ),
   fps( fps ),
   width( width ),
   height( height ),
-  depth( depth ),
   numBuffers( numBuffers ),
   error( true ),
   running( false )

@@ -5,6 +5,8 @@
 #ifndef __HTTPD_H__
 #define __HTTPD_H__
 
+#include <sys/types.h>
+
 #define IO_BUFFER 256
 #define BUFFER_SIZE 1024
 

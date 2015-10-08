@@ -97,6 +97,7 @@ FloodFillState::x( void ) const
     {
       result = _sumX / _size;
     }
+  return result;
 }
 
 int
@@ -107,4 +108,5 @@ FloodFillState::y( void ) const
     {
       result = _sumY / _size;
     }
+  return result;
 }

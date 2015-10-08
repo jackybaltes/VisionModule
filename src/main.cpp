@@ -1,3 +1,12 @@
+#include "httpd.h"
+#include "httpdthread.h"
+#include "httpdserverthread.h"
+#include "videostream.h"
+#include "serial.h"
+#include "configuration.h"
+#include "globals.h"
+#include "udpvisionserver.h"
+
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -10,13 +19,6 @@
 #include <boost/program_options.hpp>
 #include <arpa/inet.h>
 
-#include "httpd.h"
-#include "httpdthread.h"
-#include "httpdserverthread.h"
-#include "videostream.h"
-#include "serial.h"
-#include "configuration.h"
-#include "globals.h"
 
 using namespace std;
 
@@ -44,7 +46,7 @@ main( int argc, char ** argv )
 {
   string config_file;
   Configuration configuration;
-  Globals * glob = Globals::GetGlobals();
+  //  Globals * glob = Globals::GetGlobals();
 
   strncpy(progname, argv[0], 255 );
   progname[255] = '\0';
@@ -153,23 +155,6 @@ ApplyConfiguration( Configuration & configuration )
 
   glob->SetVideo( video );
 
-#if defined(DEBUG)
-  unsigned int bpp = depth/8;
-  unsigned int bpl = width * bpp;
-  uint8_t * p;
-  for( unsigned int i = 0; i < height; i++ )
-    {
-      p = static_cast<uint8_t *>(VideoStream::global.buf + i * bpl);
-      for ( unsigned int j = 0; j < width; j++ )
-	{
-	  *p++ = i & 0xff;
-	  *p++ = j & 0xff;
-	  *p++ = 0x80;
-	}
-    }
-#endif
-  
-
   Serial * serial = 0;
   if ( configuration.device_serial != "" )
     {
@@ -231,6 +216,13 @@ ApplyConfiguration( Configuration & configuration )
       
   signal(SIGHUP, CatchHUPSignal );
 
+  if ( configuration.udp_port > 0 )
+    {
+      boost::asio::io_service io_service;
+      
+      UDPVisionServer * vs = new UDPVisionServer( io_service, configuration.udp_port, video );
+      vs->StartServer();   // Does not return right now
+    }
   for(;;)
     {
       sleep(1000);
