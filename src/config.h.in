@@ -1,0 +1,9 @@
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
+
+#define VERSION_MAJOR @VERSION_MAJOR
+#define VERSION_MINOR @VERSION_MINOR
+
+#define CONFIG_DIR "@CMAKE_SOURCE_DIR/config"
+
+#endif /* __CONFIG_H__ */
