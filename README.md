@@ -15,10 +15,15 @@ You may need to install the following dependencies using apt-get.
 Clone the repository (or download the zip file).
 
     $ git clone https://github.com/jackybaltes/VisionModule
-    $ cd VisionModule/bin/debug
 
 Run cmake to create the makefiles
+
+    $ cd VisionModule/bin/debug
     $ cmake -DCMAKE_BUILD_TYPE=Debug ../..
+
+Or if you want to build a release version
+    $ cd VisionModule/bin/release
+    $ cmake -DCMAKE_BUILD_TYPE=Release ../..
 
 Run make to compile and link
 
