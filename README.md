@@ -74,3 +74,11 @@ Serial Port Options:
 You can now use a web browser to connect to port 8080 on the running computer to see the interface.
 
     $ firefox http://localhost:8080
+
+Create one or several colours that you want to track in the web interface
+
+You can then switch to "segment colours" mode and run the visionclient to see what objects were found.
+
+    $ ./visionclient 
+    Results found Ok &shirt:6696:(245,87)[199,43-318,162]&shirt:3708:(51,215)[0,174-99,238]&shirt:256:(34,169)[29,152-39,185]&shirt:95:(109,227)[100,222-116,233]&shirt:44:(225,129)[220,127-231,132]&shirt:33:(302,116)[299,114-308,118]&shirt:25:(80,239)[68,239-92,239]&shirt:20:(30,239)[21,239-40,239]&shirt:13:(6,239)[0,239-12,239]
+    Response Ok &shirt:6696:(245,87)[199,43-318,162]&shirt:3708:(51,215)[0,174-99,238]&shirt:256:(34,169)[29,152-39,185]&shirt:95:(109,227)[100,222-116,233]&shirt:44:(225,129)[220,127-231,132]&shirt:33:(302,116)[299,114-308,118]&shirt:25:(80,239)[68,239-92,239]&shirt:20:(30,239)[21,239-40,239]&shirt:13:(6,239)[0,239-12,239]
