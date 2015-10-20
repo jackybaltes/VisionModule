@@ -40,6 +40,7 @@ ADD_EXECUTABLE( vision_module
   libvideo/quadtreedecomposition.cpp
   libvideo/rect.cpp
   libvideo/v4l2device.cpp
+  libvideo/filedevice.cpp
   libvideo/videodevice.cpp
   libvideo/visionobject.cpp
   src/configuration.cpp
@@ -56,6 +57,7 @@ ADD_EXECUTABLE( vision_module
 
 ADD_DEFINITIONS(
   -DENABLE_V4L2
+  -DENABLE_FILE
 )
 
 INCLUDE_DIRECTORIES(
@@ -67,7 +69,7 @@ TARGET_LINK_LIBRARIES(vision_module
    "boost_system"
    "boost_thread"
    "v4l2"
-#   "avcodec" "avformat" "avutil" "swscale" "z" "bz2"
+   "avcodec" "avformat" "avutil" "swscale" "z" "bz2"
 #   "dc1394"
    "pthread"
    "jpeg"

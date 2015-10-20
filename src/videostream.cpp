@@ -17,7 +17,7 @@
 #endif
 
 #if defined(ENABLE_FILE)
-#   include "filedevice.h"
+#   include "../libvideo/filedevice.h"
 #endif
 
 #if defined(ENABLE_V4L2)
@@ -1090,9 +1090,6 @@ std::string
 VideoStream::ConvertResultsToString( void ) const
 {
   std::ostringstream o;
-  unsigned int x;
-  unsigned int y;
-  unsigned int max = 0;
 
 #ifndef NDEBUG
   // std::cout << "VideoStream::ConvertResultsToString called" << std::endl;

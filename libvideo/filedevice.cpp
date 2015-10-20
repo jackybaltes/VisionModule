@@ -13,7 +13,7 @@
 #include "framebufferrgb565.h"
 #include "framebufferrgb32.h"
 #include "framebufferrgb24.h"
-#include "linux/videodev.h"
+#include "linux/videodev2.h"
 #include "filedevice.h"
 
 extern "C" {
@@ -26,12 +26,13 @@ FileDevice::FileDevice (string devname, int fps, int width, int height, int dept
   : VideoDevice( "File", devname, "", "", fps, width, height, depth, 1 ),
     format(PIX_FMT_RGB32),
     videoStream(-1),
-    pFormatCtx(0),
-    pCodecCtx(0),
-    pCodec(0),
-    pFrame(0),
-    pFrameRGB(0),
-    img_convert_ctx(0)
+    pFormatCtx( nullptr ),
+    pCodecCtx( nullptr ),
+    pCodec( nullptr ),
+    pFrame( nullptr ),
+    pFrameRGB( nullptr ),
+    sws_ctx( nullptr ),
+    buffer( nullptr )
 {
 
 #ifdef DEBUG
@@ -54,18 +55,19 @@ FileDevice::FileDevice (string devname, int fps, int width, int height, int dept
     {
       std::cerr << "Unknown depth " << depth << std::endl;
     }
-    
-    
+  
   av_register_all();
 
-  if ( av_open_input_file( & pFormatCtx, devname.c_str(), NULL, 0, NULL ) != 0 )
+  pFormatCtx = avformat_alloc_context();
+  
+  if ( avformat_open_input( & pFormatCtx, devname.c_str(), 0, nullptr ) != 0 )
     {
       std::cerr << "ERROR: unable to open video file " << devname << std::endl;
       perror(":");
       std::exit(EXIT_FAILURE);
     }
 
-  if( av_find_stream_info( pFormatCtx ) < 0 )
+  if( avformat_find_stream_info( pFormatCtx, nullptr ) < 0 )
     {
       std::cerr << "ERROR: unable to find stream information" << std::endl;
       perror(":");
@@ -74,14 +76,14 @@ FileDevice::FileDevice (string devname, int fps, int width, int height, int dept
 
 #ifdef DEBUG
   // Dump information about file onto standard error
-  dump_format(pFormatCtx, 0, devname.c_str(), 0);
+  av_dump_format(pFormatCtx, 0, devname.c_str(), 0);
 #endif
 
   // Find the first video stream
   videoStream=-1;
   for( unsigned int i=0; i<pFormatCtx->nb_streams; i++ )
     {
-      if( pFormatCtx->streams[i]->codec->codec_type==CODEC_TYPE_VIDEO) 
+      if( pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO) 
 	{
 	  videoStream=i;
 	  break;
@@ -100,14 +102,15 @@ FileDevice::FileDevice (string devname, int fps, int width, int height, int dept
   
   // Find the decoder for the video stream
   pCodec=avcodec_find_decoder(pCodecCtx->codec_id);
-  if ( pCodec == NULL )
+  if ( pCodec == nullptr )
     {
       std::cerr << "ERROR: unsupported codec" << std::endl;
       std::exit(EXIT_FAILURE);
     }
 
   // Open codec
-  if( avcodec_open( pCodecCtx, pCodec ) < 0 )
+
+  if( avcodec_open2( pCodecCtx, pCodec, nullptr ) < 0 )
     {
       std::cerr << "ERROR: unable to open codec" << std::endl;
       std::exit(EXIT_FAILURE);
@@ -123,14 +126,13 @@ FileDevice::~FileDevice( )
     {
       // Close the codec
       avcodec_close(pCodecCtx);
-      pCodecCtx = 0;
+      pCodecCtx = nullptr;
     }
 
   if ( pFormatCtx != 0 )
     {
       // Close the video file
-      av_close_input_file(pFormatCtx);
-      pFormatCtx = 0;
+      avformat_close_input( & pFormatCtx);
     }
 }
 
@@ -149,16 +151,16 @@ FileDevice::startCapture (void)
   std::cout << __PRETTY_FUNCTION__ << " at (" << __FILE__ << ":" << __LINE__ << ")" << std::endl;
 #endif  
 
-  pFrame=avcodec_alloc_frame();
-  if( pFrame == NULL )
+  pFrame=av_frame_alloc();
+  if( pFrame == nullptr )
     {
       std::cerr << "ERROR: unable to open codec" << std::endl;
       std::exit(EXIT_FAILURE);
     }
 
   // Allocate an AVFrame structure
-  pFrameRGB=avcodec_alloc_frame();
-  if( pFrameRGB == NULL )
+  pFrameRGB=av_frame_alloc();
+  if( pFrameRGB == nullptr )
     {
       std::cerr << "ERROR: unable to open codec" << std::endl;
       std::exit(EXIT_FAILURE);
@@ -173,11 +175,11 @@ FileDevice::startCapture (void)
   avpicture_fill((AVPicture *)pFrameRGB, buffer, format, width, height);
 
   // Create the image converter context to format
-  img_convert_ctx = sws_getContext(pCodecCtx->width, pCodecCtx->height, 
-				   pCodecCtx->pix_fmt, 
-				   width, height, format, SWS_BICUBIC, 
-				   NULL, NULL, NULL);
-  if(img_convert_ctx == NULL) 
+  sws_ctx = sws_getContext(pCodecCtx->width, pCodecCtx->height, 
+			   pCodecCtx->pix_fmt, 
+			   width, height, format, SWS_BICUBIC, 
+			   nullptr, nullptr, nullptr);
+  if( sws_ctx == nullptr ) 
     {
       fprintf(stderr, "Cannot initialize the conversion context!\n");
       exit(1);
@@ -277,8 +279,8 @@ FileDevice::nextFrame ( FrameBuffer * * curFramePtr )
 	  if( packet.stream_index == videoStream ) 
 	    {
 	      // Decode video frame
-	      avcodec_decode_video(pCodecCtx, pFrame, &frameFinished, 
-				   packet.data, packet.size);
+	      avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished, 
+				    & packet);
 	      
 	      // Did we get a video frame?
 	    }
@@ -287,7 +289,7 @@ FileDevice::nextFrame ( FrameBuffer * * curFramePtr )
 
   if ( frameFinished )
     {
-      sws_scale(img_convert_ctx, pFrame->data, 
+      sws_scale(sws_ctx, pFrame->data, 
 		pFrame->linesize, 0, 
 		pCodecCtx->height, 
 		pFrameRGB->data, pFrameRGB->linesize);

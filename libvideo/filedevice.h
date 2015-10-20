@@ -64,15 +64,13 @@ private:
   PixelFormat format;
   int videoStream;
 
-  AVFormatContext *pFormatCtx;
-  AVCodecContext  *pCodecCtx;
-  AVCodec         *pCodec;
-  AVFrame         *pFrame; 
-  AVFrame         *pFrameRGB;
-  struct SwsContext *img_convert_ctx;
-
-  uint8_t *buffer;
-
+  AVFormatContext * pFormatCtx;
+  AVCodecContext  * pCodecCtx;
+  AVCodec         * pCodec;
+  AVFrame         * pFrame; 
+  AVFrame         * pFrameRGB;
+  SwsContext      * sws_ctx;
+  uint8_t         * buffer;
 };
 
 #endif 	    /* !FILEDEVICE_H_ */

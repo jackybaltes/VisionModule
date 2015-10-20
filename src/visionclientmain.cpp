@@ -14,7 +14,7 @@
 
 
 #define DEFAULT_PORT "2134"
-#define DEFAULT_SERVER "localhost"
+#define DEFAULT_SERVER "127.0.0.1"
 
 using boost::asio::ip::udp;
 
