@@ -24,7 +24,7 @@ extern "C" {
 
 FileDevice::FileDevice (string devname, int fps, int width, int height, int depth )
   : VideoDevice( "File", devname, "", "", fps, width, height, depth, 1 ),
-    format(PIX_FMT_RGB32),
+    format(PIX_FMT_BGR32),
     videoStream(-1),
     pFormatCtx( nullptr ),
     pCodecCtx( nullptr ),
@@ -41,11 +41,11 @@ FileDevice::FileDevice (string devname, int fps, int width, int height, int dept
 
   if ( depth == 32 )
     {
-      format = PIX_FMT_RGB32;
+      format = PIX_FMT_BGR32;
     }
   else if ( depth == 24 )
     {
-      format = PIX_FMT_RGB24;
+      format = PIX_FMT_BGR24;
     }
   else if ( depth == 16 )
     {
