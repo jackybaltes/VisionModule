@@ -199,6 +199,12 @@ VideoStream::ProcessFrame( enum ProcessType ptype,
   Globals * glob = Globals::GetGlobals();
 
   outFrame->fill( RawPixel( 0, 0, 0 ) );
+
+  
+  if (  ptype == Raw )
+    {
+      ImageProcessing::IndexColours( frame, 1 );
+    }
   
   if ( (  ptype == Raw ) || ( ptype == ShowColours ) )
     {

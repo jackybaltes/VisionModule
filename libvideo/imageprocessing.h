@@ -30,6 +30,8 @@ class ImageProcessing {
 
   static void segmentScanLines( FrameBuffer * frame, FrameBuffer * outFrame, unsigned int threshold, unsigned int minLength, unsigned int maxLength, unsigned int minSize, RawPixel const & mark, unsigned int subsample, ColourDefinition const * target );
   static void SegmentColours( FrameBuffer * frame, FrameBuffer * outFrame, unsigned int threshold, unsigned int minLength, unsigned int minSize, unsigned int subSample, ColourDefinition const & target, RawPixel const & mark, std::vector<VisionObject> & results );
+void
+  static IndexColours( FrameBuffer * frame, unsigned int subSample );
 
   static void medianFilter( FrameBuffer const * frame, FrameBuffer * outFrame, unsigned int subSample = 1 );
 

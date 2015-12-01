@@ -363,6 +363,61 @@ ImageProcessing::SegmentColours( FrameBuffer * frame,
 }
 
 void
+ImageProcessing::IndexColours( FrameBuffer * frame, 
+			       unsigned int subSample
+			       )
+{
+  FrameBufferIterator it( frame );
+  RawPixel cPixel;
+  RawPixel const colours[] = { RawPixel(0, 0, 0),
+			       RawPixel(0, 0, 255),
+			       RawPixel(0, 255, 0),
+			       RawPixel(0, 255, 255),
+			       RawPixel(255, 0, 0),
+			       RawPixel(255, 0, 255),
+			       RawPixel(255, 255, 0),
+			       RawPixel(255, 255, 255) };
+			 			 
+  for( unsigned int row = 0; row < frame->height; row = row + subSample )
+    {
+      it.goPosition(row, subSample);
+
+      for( unsigned int col = subSample; col < frame->width; col = col + subSample, it.goRight( subSample ) )
+	{
+	  it.getPixel( & cPixel );
+	  unsigned int sum = cPixel.red + cPixel.green + cPixel.blue + 1;
+
+	  if ( sum < 10 )
+	    {
+	      sum = 10;
+	    }
+	  
+	  int redNormalize = ( cPixel.red * 256) / sum;
+	  int greenNormalize = ( cPixel.green * 256) / sum;
+	  int blueNormalize = 2 * ( cPixel.blue * 256) / sum;
+	  int index = 0;
+	  
+	  if ( redNormalize > (256/2) ) {
+	    index = 4;
+	  } else if ( greenNormalize > (256/2) ) {
+	    index = 2;
+	  } else if ( blueNormalize > ( 256/2) ) {
+	    index = 1;
+	  } else if ( redNormalize + greenNormalize > 256/2 ) {
+	    index = 6;
+	  } else if ( redNormalize + blueNormalize > 256/2 ) {
+	    index = 5;
+	  } else if ( greenNormalize + blueNormalize > 256/2 ) {
+	    index = 3;
+	  } else if ( redNormalize + greenNormalize + blueNormalize > 256/2 ) {
+	    index = 7;
+	  }
+	  it.setPixel( colours[index] );
+	}
+    }
+}
+
+void
 ImageProcessing::convertBuffer( FrameBuffer const * frame, 
 				FrameBuffer * outFrame, 
 				unsigned int subSample )
