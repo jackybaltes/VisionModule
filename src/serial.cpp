@@ -35,7 +35,7 @@ Serial::Serial( string devname, speed_t baudrate )
      Open modem device for reading and writing and not as controlling tty
      because we don't want to get killed if linenoise sends CTRL-C.
   */
-  fd = ::open( devname.c_str(), O_RDWR | O_NOCTTY );
+  fd = ::open( devname.c_str(), O_RDWR | O_NOCTTY | O_CLOEXEC );
   if (fd <0)
     {
       perror( "Serial::Serial " );

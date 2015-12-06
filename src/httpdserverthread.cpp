@@ -41,7 +41,7 @@ HTTPDServerThread::Run( void )
   pthread_cleanup_push( CleanUpTrampoline, (void * ) this );
 
   /* open socket for server */
-  fd = socket(PF_INET, SOCK_STREAM, 0);
+  fd = socket(PF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0);
   if ( fd < 0 ) 
     {
       fprintf(stderr, "socket failed\n");

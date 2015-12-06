@@ -39,7 +39,7 @@ V4L2Device::V4L2Device (string devname, string inputName, string standardName, u
     }
 #endif
 
-  if ( ( fd = v4l2_open (devname.c_str(), O_RDWR) ) < 0 )
+  if ( ( fd = v4l2_open (devname.c_str(), O_RDWR | O_CLOEXEC ) ) < 0 )
     {
       std::cerr << "ERROR: V4L2Device unable to open device " << devname;
       perror (":");
