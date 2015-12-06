@@ -34,7 +34,7 @@ CatchHUPSignal( int num )
   signal(SIGHUP, CatchHUPSignal );
   int err;
 
-  if ( ( err = execl( progname, "-c", "./www/__config__.cfg", NULL) ) < 0 )
+  if ( ( err = execl( progname, progname, "--config", "./www/__config__.cfg", NULL) ) < 0 )
     {
       perror("execl failed:");
       exit(10);

@@ -9,10 +9,12 @@
 #include <cstdlib>
 
 #include <inttypes.h>
+#include <fcntl.h>
+#include <signal.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <unistd.h>
 
 #include "httpd.h"
 #include "httpdclientthread.h"
@@ -791,16 +793,15 @@ HTTPDClientThread::ReceiveFile( iobuffer * iobuf, char const * parameter, size_t
   char content[256];
   char mark[80];
   std::ostream * os;
-  std::ostringstream oss;
   std::ofstream ofile;
   
   DBG("Receiving file %s of size %d", parameter, length );
 
-  if ( !strcmp( parameter, "__config__.cfg" ) )
-    {
-      os = & oss;
-    }
-  else
+  //  if ( !strcmp( parameter, "__config__.cfg" ) )
+  //    {
+  //      os = & oss;
+  //    }
+  //else
     {
       /* build the absolute path to the file */
       char buffer[BUFFER_SIZE] = {0};
@@ -837,6 +838,7 @@ HTTPDClientThread::ReceiveFile( iobuffer * iobuf, char const * parameter, size_t
 	      mark[in-1] = '-';
 	      mark[in] = '\r';
 	      mark[in+1] = '\n';
+              mark[in+2] = '\0';
 
 	      doWrite = 0;
 	    }
@@ -861,22 +863,8 @@ HTTPDClientThread::ReceiveFile( iobuffer * iobuf, char const * parameter, size_t
     }
   DBG("Read and saved %d bytes\n", total );
 
-  std::ofstream * of;
-  std::ostringstream * ossp;
-  if ( ( of = dynamic_cast<std::ofstream *>(os) ) != 0 ) 
-    {
-      (*of).close();
-    }
-  else if ( ( ossp = dynamic_cast<std::ostringstream *>(os) ) != 0 )
-    {
-      std::string configStr = (*ossp).str();
-      Configuration config;
-
-      config.UpdateConfiguration( configStr );
-      std::cout << config;
-      Globals * glob = Globals::GetGlobals();
-      glob->UpdateRunningConfiguration( & config );
-    }
+  ofile.close();
+  kill( getpid(), SIGHUP );
 }
 
 
