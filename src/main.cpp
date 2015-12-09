@@ -13,11 +13,12 @@
 #include <sstream>
 #include <string>
 
-#include <unistd.h>
+#include <arpa/inet.h>
+#include <boost/program_options.hpp>
 #include <sys/types.h>
 #include <signal.h>
-#include <boost/program_options.hpp>
-#include <arpa/inet.h>
+#include <unistd.h>
+
 
 
 using namespace std;
@@ -31,7 +32,6 @@ static char progname[256];
 void
 CatchHUPSignal( int num )
 {
-  signal(SIGHUP, CatchHUPSignal );
   int err;
 
   if ( ( err = execl( progname, progname, "--config", "./www/__config__.cfg", NULL) ) < 0 )
@@ -46,10 +46,23 @@ main( int argc, char ** argv )
 {
   string config_file;
   Configuration configuration;
-  //  Globals * glob = Globals::GetGlobals();
+  Globals * glob = Globals::GetGlobals();
 
+  glob->hupSignalHandler = CatchHUPSignal;
+    
   strncpy(progname, argv[0], 255 );
   progname[255] = '\0';
+
+  std::cout << "Process id" << getpid() << "Setting up signal handler" << std::endl;
+  struct sigaction sa;
+  sa.sa_handler = glob->hupSignalHandler;
+  sigemptyset(& sa.sa_mask);
+  sa.sa_flags = SA_NODEFER;
+
+  if ( sigaction(SIGHUP, &sa, NULL  ) == -1 )
+    {
+      std::cerr << "Error setting up signal handler" << std::endl;
+    }
 
   try 
     {
@@ -193,7 +206,7 @@ ApplyConfiguration( Configuration & configuration )
   video->SetColours( colourDefs );
       
 #if defined(DEBUG)
-  cout << "Starting video thread" << endl;
+  cout << "Starting http server thread" << endl;
 #endif
       
   HTTPD * server = new HTTPD( configuration.http_port, 
@@ -213,8 +226,6 @@ ApplyConfiguration( Configuration & configuration )
       
   pthread_create(&(video->threadID), NULL, (void * (*) ( void *)) video->run_trampoline, static_cast<void *>( video ) );
   pthread_detach(video->threadID);
-      
-  signal(SIGHUP, CatchHUPSignal );
 
   if ( configuration.udp_port > 0 )
     {

@@ -29,9 +29,6 @@
 using namespace std;
 #endif
 
-#include <arpa/inet.h>
-#include <linux/videodev2.h>
-
 #include "../libvideo/colourdefinition.h"
 #include "../libvideo/framebuffer.h"
 #include "../libvideo/framebufferrgb24.h"
@@ -43,6 +40,10 @@ using namespace std;
 #include "httpd.h"
 #include "serial.h"
 #include "videostream.h"
+
+#include <arpa/inet.h>
+#include <linux/videodev2.h>
+#include <signal.h>
 
 using namespace std;
 
@@ -139,6 +140,20 @@ VideoStream::run( )
 {
   FrameBuffer * cameraFrame = 0;
   FrameBuffer * outFrame = 0;
+
+  Globals * glob = Globals::GetGlobals();
+
+  std::cout << "Setting up signal handler on VideoStream::run" << std::endl;
+  struct sigaction sa;
+  sa.sa_handler = glob->hupSignalHandler;
+  
+  sigemptyset(& sa.sa_mask);
+  sa.sa_flags = SA_NODEFER;
+
+  if ( sigaction(SIGHUP, &sa, NULL  ) == -1 )
+    {
+      std::cerr << "Error setting up signal handler" << std::endl;
+    }
 
   device->startCapture( );
   

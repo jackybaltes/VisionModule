@@ -11,9 +11,11 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <syslog.h>
+#include <signal.h>
 #include <pthread.h>
 #include <unistd.h>
 
+#include "globals.h"
 #include "httpdthread.h"
 #include "httpd.h"
 #include "httpdserverthread.h"
@@ -37,6 +39,20 @@ HTTPDServerThread::Run( void )
   struct sockaddr_in client_addr;
   socklen_t addr_len = sizeof(struct sockaddr_in);
   int on;
+
+  Globals * glob = Globals::GetGlobals();
+
+  std::cout << "Setting up signal handler on HTTPDServerThread" << std::endl;
+  struct sigaction sa;
+  sa.sa_handler = glob->hupSignalHandler;
+  
+  sigemptyset(& sa.sa_mask);
+  sa.sa_flags = SA_NODEFER;
+
+  if ( sigaction(SIGHUP, &sa, NULL  ) == -1 )
+    {
+      std::cerr << "Error setting up signal handler" << std::endl;
+    }
 
   pthread_cleanup_push( CleanUpTrampoline, (void * ) this );
 

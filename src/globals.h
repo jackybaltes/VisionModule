@@ -114,4 +114,7 @@ class Globals
 
  public:
   void UpdateRunningConfiguration( Configuration const * cfg );
+
+ public:
+  void (* hupSignalHandler)(int);
 };

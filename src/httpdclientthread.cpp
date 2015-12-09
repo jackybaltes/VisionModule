@@ -47,7 +47,19 @@ HTTPDClientThread::Run( void )
   request req;
   //  cfd lcfd; /* local-connected-file-descriptor */
   char const * s;
+
   Globals * glob = Globals::GetGlobals();
+  std::cout << "Setting up signal handler on HTTPDClientThread" << std::endl;
+  struct sigaction sa;
+  sa.sa_handler = glob->hupSignalHandler;
+  
+  sigemptyset(& sa.sa_mask);
+  sa.sa_flags = SA_NODEFER;
+
+  if ( sigaction(SIGHUP, &sa, NULL  ) == -1 )
+    {
+      std::cerr << "Error setting up signal handler" << std::endl;
+    }
 
   /* initializes the structures */
   init_iobuffer(&iobuf);
@@ -227,6 +239,8 @@ HTTPDClientThread::Run( void )
     else
       {
 	ReceiveFile( & iobuf, req.parameter, req.content_length);
+	std::cout << "Pid " << getpid() << " sending SIGHUP" << std::endl;
+	kill( getpid(), SIGHUP );
       }
     break;    
   default:
@@ -864,7 +878,6 @@ HTTPDClientThread::ReceiveFile( iobuffer * iobuf, char const * parameter, size_t
   DBG("Read and saved %d bytes\n", total );
 
   ofile.close();
-  kill( getpid(), SIGHUP );
 }
 
 
